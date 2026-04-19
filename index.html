@@ -9,10 +9,26 @@
 <body>
   <main class="container">
     <section class="hero">
-      <p class="hero-kicker">Content Radar Studio</p>
-      <h1>自媒体冷启动内容策略助手</h1>
-      <p class="hero-subtitle">帮你找到适合自己的自媒体内容方向、差异化切口和第一篇可发布方案</p>
-      <p class="hero-desc">把你已有的经历、关注议题和目标受众，整理成一套可执行的冷启动内容路线图。</p>
+      <div class="hero-copy">
+        <p class="hero-kicker">Content Radar Studio</p>
+        <h1>自媒体冷启动内容策略助手</h1>
+        <p class="hero-subtitle">帮你找到适合自己的自媒体内容方向、差异化切口和第一篇可发布方案</p>
+        <p class="hero-desc">输入你的经历、想表达的主题和目标人群，直接拿到内容资产、差异化切口、传播潜力和第一周动作包。</p>
+      </div>
+      <div class="hero-panel">
+        <div class="hero-panel-item">
+          <span class="hero-panel-label">输入</span>
+          <strong>经历 / 主题 / 人群</strong>
+        </div>
+        <div class="hero-panel-item">
+          <span class="hero-panel-label">输出</span>
+          <strong>定位 / 切口 / 方案</strong>
+        </div>
+        <div class="hero-panel-item">
+          <span class="hero-panel-label">适合</span>
+          <strong>还没想清楚该发什么的人</strong>
+        </div>
+      </div>
     </section>
 
     <section class="card form-card">
@@ -65,33 +81,57 @@
     <section id="result" class="result hidden" aria-live="polite">
       <article class="card asset-card">
         <div class="section-head">
-          <p class="section-label">Asset Summary</p>
-          <h2>你的内容资产识别</h2>
+          <p class="section-label">01 / 内容资产识别</p>
+          <h2>你现在就能拿来讲的内容素材</h2>
         </div>
         <p id="assetSummary" class="asset-summary"></p>
         <div id="assetTags" class="tags"></div>
       </article>
 
+      <article class="card diff-card">
+        <div class="section-head">
+          <p class="section-label">02 / 差异化切口</p>
+          <h2>你和泛泛创作者的分界线</h2>
+        </div>
+        <div id="differentiation" class="grid-list"></div>
+      </article>
+
+      <article class="card traffic-card">
+        <div class="section-head">
+          <p class="section-label">03 / 潜在传播优势</p>
+          <h2>什么内容更容易被看见、收藏和讨论</h2>
+        </div>
+        <div id="trafficPotential" class="grid-list"></div>
+      </article>
+
       <article class="card opportunities-card">
         <div class="section-head">
-          <p class="section-label">Opportunities</p>
-          <h2>推荐内容方向</h2>
+          <p class="section-label">04 / 推荐内容方向</p>
+          <h2>更适合你长期做的内容栏目</h2>
         </div>
         <div id="opportunities" class="opportunity-list"></div>
       </article>
 
+      <article class="card blueprint-card">
+        <div class="section-head">
+          <p class="section-label">05 / 第一篇内容方案</p>
+          <h2>可以直接开写的首篇帖子</h2>
+        </div>
+        <div id="firstPostBlueprint" class="blueprint-content"></div>
+      </article>
+
       <article class="card spotlight-card">
         <div class="section-head">
-          <p class="section-label">Launch Pack</p>
-          <h2>第一周动作包</h2>
+          <p class="section-label">06 / 第一周动作计划</p>
+          <h2>接下来 7 天怎么发、怎么试</h2>
         </div>
         <div id="firstWeekPlan" class="plan-list"></div>
       </article>
 
       <article class="card risk-card">
         <div class="section-head">
-          <p class="section-label">Risk Alerts</p>
-          <h2>风险提醒</h2>
+          <p class="section-label">07 / 风险提醒</p>
+          <h2>冷启动阶段最容易踩的坑</h2>
         </div>
         <ul id="riskAlerts" class="risk-list"></ul>
       </article>

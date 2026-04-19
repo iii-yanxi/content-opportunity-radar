@@ -44,6 +44,22 @@ function renderGridList(boxId, dataMap) {
   }
 }
 
+function renderDifferentiation(data) {
+  renderGridList("differentiation", {
+    "核心价值切口": data?.coreAngle,
+    "为什么只能你来做": data?.whyYou,
+    "避开的同质化路线": data?.avoidCommonPath,
+  });
+}
+
+function renderTrafficPotential(data) {
+  renderGridList("trafficPotential", {
+    "情绪共鸣点": data?.highResonance,
+    "收藏价值点": data?.highSaveValue,
+    "讨论引爆点": data?.highDiscussionPotential,
+  });
+}
+
 function renderBlueprint(data) {
   const box = document.getElementById("firstPostBlueprint");
   box.innerHTML = "";
@@ -52,13 +68,15 @@ function renderBlueprint(data) {
     return;
   }
 
-  const structureHtml = (data.structure || []).map((s, i) => 
-    '<li><span class="step-num">' + (i + 1) + '</span> ' + escapeHtml(s) + '</li>'
-  ).join('');
+  const structureHtml = (data.structure || [])
+    .map((s, i) =>
+      '<li><span class="step-num">' + (i + 1) + '</span> ' + escapeHtml(s) + '</li>'
+    )
+    .join("");
 
   box.innerHTML =
     '<div class="bp-title-wrap">' +
-      '<span class="bp-badge">爆款模板</span>' +
+      '<span class="bp-badge">第一篇内容方案</span>' +
       '<h3 class="bp-title">' + escapeHtml(data.title) + '</h3>' +
     '</div>' +
     '<div class="bp-details">' +
@@ -154,7 +172,7 @@ generateBtn.addEventListener("click", async () => {
     return;
   }
 
-  statusEl.textContent = "正在深度分析，预计需要15-20秒，请稍等...";
+  statusEl.textContent = "正在生成内容策略报告，请稍等...";
   statusEl.dataset.state = "loading";
   generateBtn.disabled = true;
 
@@ -173,18 +191,9 @@ generateBtn.addEventListener("click", async () => {
 
     document.getElementById("assetSummary").textContent = data.assetSummary;
     renderTags(data.assetTags || []);
-    
-    renderGridList("differentiation", {
-      "核心价值切口": data.differentiation?.coreAngle,
-      "为什么只能你来做": data.differentiation?.whyYou,
-      "坚决避开的同质化路线": data.differentiation?.avoidCommonPath
-    });
 
-    renderGridList("trafficPotential", {
-      "情感类传播潜力": data.trafficPotential?.highResonance,
-      "干货类收藏潜力": data.trafficPotential?.highSaveValue,
-      "观点类讨论爆点": data.trafficPotential?.highDiscussionPotential
-    });
+    renderDifferentiation(data.differentiation);
+    renderTrafficPotential(data.trafficPotential);
 
     renderOpportunities(data.opportunities || []);
     renderBlueprint(data.firstPostBlueprint || {});
