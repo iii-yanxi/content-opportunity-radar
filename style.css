@@ -355,6 +355,16 @@ button:disabled {
   line-height: 1.65;
 }
 
+.insight-block + .insight-block {
+  margin-top: 16px;
+}
+
+.insight-title {
+  margin: 0 0 10px;
+  color: #1e3b41;
+  font-size: 16px;
+}
+
 .opportunity-list,
 .plan-list {
   display: grid;
@@ -568,7 +578,8 @@ button:disabled {
 
 @media (min-width: 920px) {
   .diff-card,
-  .traffic-card {
+  .traffic-card,
+  .insights-card {
     grid-column: span 6;
   }
 

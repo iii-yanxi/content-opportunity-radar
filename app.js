@@ -13,6 +13,7 @@ function escapeHtml(str) {
 
 function renderTags(tags) {
   const box = document.getElementById("assetTags");
+  if (!box) return;
   box.innerHTML = "";
 
   if (!tags.length) {
@@ -30,6 +31,7 @@ function renderTags(tags) {
 
 function renderGridList(boxId, dataMap) {
   const box = document.getElementById(boxId);
+  if (!box) return;
   box.innerHTML = "";
   if (!dataMap || typeof dataMap !== "object") return;
 
@@ -62,6 +64,7 @@ function renderTrafficPotential(data) {
 
 function renderBlueprint(data) {
   const box = document.getElementById("firstPostBlueprint");
+  if (!box) return;
   box.innerHTML = "";
   if (!data || !data.title) {
     box.innerHTML = '<p class="empty-note">暂无第一篇内容建议。</p>';
@@ -74,24 +77,44 @@ function renderBlueprint(data) {
     )
     .join("");
 
+  const secretList = (data.trafficSecrets || [])
+    .map((s) => '<li>' + escapeHtml(s) + '</li>')
+    .join("");
+
+  const extensionList = (data.extensionPlan || [])
+    .map((s) => '<li>' + escapeHtml(s) + '</li>')
+    .join("");
+
   box.innerHTML =
     '<div class="bp-title-wrap">' +
       '<span class="bp-badge">第一篇内容方案</span>' +
       '<h3 class="bp-title">' + escapeHtml(data.title) + '</h3>' +
     '</div>' +
     '<div class="bp-details">' +
+      '<div class="bp-row"><strong>封面文案：</strong>' + escapeHtml(data.coverLine || "把你最核心的结论放在封面首行") + '</div>' +
       '<div class="bp-row"><strong>黄金开头：</strong>' + escapeHtml(data.hook) + '</div>' +
+      '<div class="bp-row"><strong>正文开场白：</strong>' + escapeHtml(data.openingScript || "先给一个反差场景，再抛出你的核心观点") + '</div>' +
       '<div class="bp-row"><strong>推荐形式：</strong>' + escapeHtml(data.format) + '</div>' +
+      '<div class="bp-row"><strong>结尾文案：</strong>' + escapeHtml(data.closingScript || "收束核心观点，并给出下一步可执行动作") + '</div>' +
       '<div class="bp-row"><strong>互动引导：</strong>' + escapeHtml(data.cta) + '</div>' +
     '</div>' +
     '<div class="bp-structure">' +
       '<h4>正文结构参考：</h4>' +
       '<ul>' + structureHtml + '</ul>' +
+    '</div>' +
+    '<div class="bp-structure">' +
+      '<h4>流量密码（可直接套用）：</h4>' +
+      '<ul>' + (secretList || '<li>前 2 句先给结论，再补原因，降低跳出率。</li>') + '</ul>' +
+    '</div>' +
+    '<div class="bp-structure">' +
+      '<h4>延展扩散（1条内容拆3条）：</h4>' +
+      '<ul>' + (extensionList || '<li>把主帖拆成复盘版、清单版、观点版三条内容。</li>') + '</ul>' +
     '</div>';
 }
 
 function renderOpportunities(list) {
   const box = document.getElementById("opportunities");
+  if (!box) return;
   box.innerHTML = "";
 
   if (!list.length) {
@@ -119,6 +142,7 @@ function renderOpportunities(list) {
 
 function renderPlan(list) {
   const box = document.getElementById("firstWeekPlan");
+  if (!box) return;
   box.innerHTML = "";
 
   if (!list.length) {
@@ -140,6 +164,7 @@ function renderPlan(list) {
 
 function renderRisks(list) {
   const box = document.getElementById("riskAlerts");
+  if (!box) return;
   box.innerHTML = "";
 
   if (!list.length) {

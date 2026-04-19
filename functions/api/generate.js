@@ -27,9 +27,16 @@ export async function onRequestPost(context) {
     return parts.join("、") || "同样在寻找方向的人";
   }
 
+  function shortCue(text = "", maxLen = 22) {
+    const normalized = toText(text).replace(/\s+/g, "");
+    if (!normalized) return "这件事";
+    return normalized.length > maxLen ? `${normalized.slice(0, maxLen)}...` : normalized;
+  }
+
   function fallbackReport(input = {}) {
     const audienceHint = buildAudienceHint(input.audience, input.topics);
     const topicHint = toText(input.topics, "内容表达") || "内容表达";
+    const backgroundCue = shortCue(input.background);
     return {
       assetSummary: `你可以把 ${topicHint} 和真实经历整理成更有个人辨识度的内容表达。`,
       assetTags: uniqueStrings(["真实表达", "可持续主题", "冷启动友好", topicHint].map((item) => toText(item))).slice(0, 4),
@@ -70,16 +77,29 @@ export async function onRequestPost(context) {
         }
       ],
       firstPostBlueprint: {
-        title: `我花了很久才想明白：关于 ${topicHint} 的3个关键认知`,
-        hook: `我一开始也以为 ${topicHint} 只要靠努力就行，后来才发现真正卡住我的不是努力。`,
+        title: `我在 ${backgroundCue} 里踩了3次坑后，才总结出这套 ${topicHint} 起步方法`,
+        coverLine: `${topicHint} 不是你想的那样：我踩坑后总结的3条结论`,
+        hook: `如果你也在 ${topicHint} 上反复卡住，这篇可能能帮你少走半年弯路。`,
+        openingScript: `先讲一个真实场景：我在做 ${backgroundCue} 时，以为越努力越有效，结果连续翻车。`,
         structure: [
-          "先说清楚：我原来是怎么理解这个问题的",
-          "再讲一个真实经历：我踩了什么坑、发生了什么变化",
-          "给出一个反转观点：为什么后来我换了思路",
-          "最后落到可执行方法：别人可以直接怎么开始"
+          "先给结论：真正影响结果的不是努力多少，而是路径是否对",
+          "再讲我的翻车经历：做错了什么、为什么会错",
+          "给出反转洞察：后来我如何调整，哪些动作最关键",
+          "最后给可执行模板：新手今天就能照着做的起步步骤"
         ],
         format: "图文清单 / 文字长帖",
-        cta: `如果你也在做 ${topicHint}，可以在评论区说说你现在卡在哪一步。`
+        closingScript: "最后我只保留一个行动建议：先用最小成本发出第一条，再根据反馈迭代。",
+        cta: `你现在在 ${topicHint} 的哪个阶段？评论区留“卡点”，我按高频问题做下一篇。`,
+        trafficSecrets: [
+          "开头 2 句先给反差结论，再讲原因，减少读者流失。",
+          "每一段都带一个具体场景词，避免抽象表达。",
+          "在中段放一个可复制的小模板，提升收藏率。"
+        ],
+        extensionPlan: [
+          "把主帖改写为 30 秒短视频口播稿，保留同一核心结论。",
+          "把正文方法论拆成一张清单图，做二次分发。",
+          "从评论区挑 1 个高频问题，产出一条追更答疑帖。"
+        ]
       },
       firstWeekPlan: [
         {
@@ -106,8 +126,8 @@ export async function onRequestPost(context) {
     };
   }
 
-  function sanitizeReport(raw, audience = "") {
-    const base = fallbackReport(audience);
+  function sanitizeReport(raw, input = {}) {
+    const base = fallbackReport(input);
     if (!raw || typeof raw !== "object") return base;
 
     const positions = ["最适合你", "最容易冷启动", "最有长期延展"];
@@ -161,10 +181,15 @@ export async function onRequestPost(context) {
       opportunities,
       firstPostBlueprint: {
         title: toText(raw.firstPostBlueprint?.title, base.firstPostBlueprint.title),
+        coverLine: toText(raw.firstPostBlueprint?.coverLine, base.firstPostBlueprint.coverLine),
         hook: toText(raw.firstPostBlueprint?.hook, base.firstPostBlueprint.hook),
+        openingScript: toText(raw.firstPostBlueprint?.openingScript, base.firstPostBlueprint.openingScript),
         structure: pickStringArray(raw.firstPostBlueprint?.structure, base.firstPostBlueprint.structure),
         format: toText(raw.firstPostBlueprint?.format, base.firstPostBlueprint.format),
+        closingScript: toText(raw.firstPostBlueprint?.closingScript, base.firstPostBlueprint.closingScript),
         cta: toText(raw.firstPostBlueprint?.cta, base.firstPostBlueprint.cta),
+        trafficSecrets: pickStringArray(raw.firstPostBlueprint?.trafficSecrets, base.firstPostBlueprint.trafficSecrets).slice(0, 4),
+        extensionPlan: pickStringArray(raw.firstPostBlueprint?.extensionPlan, base.firstPostBlueprint.extensionPlan).slice(0, 4),
       },
       firstWeekPlan,
       riskAlerts: pickStringArray(raw.riskAlerts, base.riskAlerts).slice(0, 5),
@@ -214,9 +239,11 @@ export async function onRequestPost(context) {
 2. 不要输出“产品经理”“讲师”“运营”“顾问”等职业名称作为方向。
 3. 内容方向要贴近创作语言，例如真实经历复盘、主题化表达、行业观察、生活方式表达、实操经验分享。
 4. trafficPotential 只能基于用户输入推断，不要假装引用实时热点或外部数据。
-5. firstPostBlueprint 必须像可以直接发布的第一篇帖子方案，包含钩子、结构和评论区引导。
-6. 所有内容都要具体，避免空泛鼓励和模板化描述。
-7. 必须是合法 JSON。
+5. firstPostBlueprint 必须像可以直接发布的第一篇帖子方案，包含封面文案、钩子、正文结构、结尾话术、评论区引导。
+6. firstPostBlueprint 还要包含“trafficSecrets”和“extensionPlan”，让用户可以把首篇内容扩散成后续内容。
+7. 所有内容都要具体，避免空泛鼓励和模板化描述。
+8. 必须是合法 JSON。
+9. 标题和正文要尽量贴近用户输入，不要像通用模板。
 
 请返回以下结构：
 {
@@ -260,10 +287,15 @@ export async function onRequestPost(context) {
   ],
   "firstPostBlueprint": {
     "title": "直接可以发的第一篇标题",
+    "coverLine": "封面上最抓眼的第一句话",
     "hook": "正文开头的黄金三秒钩子",
+    "openingScript": "正文第一段怎么说",
     "structure": ["第一部分", "第二部分", "第三部分", "第四部分"],
     "format": "建议的发布形式",
-    "cta": "结尾评论区互动引导"
+    "closingScript": "正文结尾怎么收束",
+    "cta": "结尾评论区互动引导",
+    "trafficSecrets": ["能提升完读/收藏/转发的执行细节1", "执行细节2", "执行细节3"],
+    "extensionPlan": ["如何拆成第2条内容", "如何拆成第3条内容", "如何拆成互动答疑内容"]
   },
   "firstWeekPlan": [
     {
