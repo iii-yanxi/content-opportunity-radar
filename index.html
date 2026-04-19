@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>内容机会雷达</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <h1>内容机会雷达</h1>
+      <p>先识别你有什么可做的内容资产，再判断什么值得做。</p>
+    </section>
+
+    <section class="card form-card">
+      <div class="field">
+        <label for="background">经历 / 优势</label>
+        <textarea id="background" placeholder="例如：计算机硕士、AI项目、实习经历、成长记录、审美表达"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="topics">想表达的主题</label>
+        <textarea id="topics" placeholder="例如：AI、求职、成长、生活方式、品牌内容"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="audience">想吸引的人群</label>
+        <input id="audience" type="text" placeholder="例如：女大学生、求职者、品牌运营、新手创作者" />
+      </div>
+
+      <div class="field">
+        <label for="stylePreference">表达方式偏好</label>
+        <select id="stylePreference">
+          <option>真诚记录</option>
+          <option>干货分享</option>
+          <option>观点表达</option>
+          <option>故事化讲述</option>
+          <option>还不确定</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="frequency">每周更新频率</label>
+        <select id="frequency">
+          <option>1次</option>
+          <option>2-3次</option>
+          <option>4次以上</option>
+        </select>
+      </div>
+
+      <button id="generateBtn">生成内容机会报告</button>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section id="result" class="result hidden">
+      <div class="card">
+        <h2>内容资产识别</h2>
+        <p id="assetSummary"></p>
+        <div id="assetTags" class="tags"></div>
+      </div>
+
+      <div class="card">
+        <h2>推荐内容方向</h2>
+        <div id="opportunities"></div>
+      </div>
+
+      <div class="card">
+        <h2>第一周动作包</h2>
+        <div id="firstWeekPlan"></div>
+      </div>
+
+      <div class="card">
+        <h2>风险提醒</h2>
+        <ul id="riskAlerts"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
