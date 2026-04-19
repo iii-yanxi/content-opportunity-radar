@@ -273,6 +273,7 @@ button:disabled {
 .risk-card,
 .diff-card,
 .traffic-card,
+.insights-card,
 .blueprint-card,
 .spotlight-card {
   grid-column: span 12;
@@ -528,6 +529,14 @@ button:disabled {
   gap: 8px;
 }
 
+.bp-direct {
+  margin: 0;
+  white-space: pre-wrap;
+  color: #32474c;
+  line-height: 1.78;
+  font-size: 15px;
+}
+
 .bp-structure li {
   display: flex;
   gap: 8px;
@@ -580,6 +589,11 @@ button:disabled {
   .diff-card,
   .traffic-card,
   .insights-card {
+    grid-column: span 12;
+  }
+
+  .diff-card,
+  .traffic-card {
     grid-column: span 6;
   }
 

@@ -7,128 +7,14 @@ export async function onRequestPost(context) {
     return fallback;
   }
 
-  function limitText(value, maxLen) {
-    const text = toText(value);
-    return text.length > maxLen ? text.slice(0, maxLen) : text;
-  }
-
   function pickStringArray(value, fallback = []) {
     if (!Array.isArray(value)) return fallback;
     const cleaned = value.map((item) => toText(item)).filter(Boolean);
     return cleaned.length ? cleaned : fallback;
   }
 
-  function uniqueStrings(list) {
-    return Array.from(new Set(list.filter(Boolean)));
-  }
-
-  function buildAudienceHint(audience = "", topics = "") {
-    const parts = [toText(audience), toText(topics)].filter(Boolean);
-    return parts.join("、") || "同样在寻找方向的人";
-  }
-
-  function shortCue(text = "", maxLen = 22) {
-    const normalized = toText(text).replace(/\s+/g, "");
-    if (!normalized) return "这件事";
-    return normalized.length > maxLen ? `${normalized.slice(0, maxLen)}...` : normalized;
-  }
-
-  function fallbackReport(input = {}) {
-    const audienceHint = buildAudienceHint(input.audience, input.topics);
-    const topicHint = toText(input.topics, "内容表达") || "内容表达";
-    const backgroundCue = shortCue(input.background);
-    return {
-      assetSummary: `你可以把 ${topicHint} 和真实经历整理成更有个人辨识度的内容表达。`,
-      assetTags: uniqueStrings(["真实表达", "可持续主题", "冷启动友好", topicHint].map((item) => toText(item))).slice(0, 4),
-      differentiation: {
-        coreAngle: `把 ${topicHint} 讲成有场景、有转折、有结果的真实内容。`,
-        whyYou: `你对 ${topicHint} 的理解来自自己的经历和取舍，这种视角别人很难直接复制。`,
-        avoidCommonPath: "不要写成泛泛而谈的百科知识，也不要一上来追热点却没有自己视角。"
-      },
-      trafficPotential: {
-        highResonance: `围绕 ${audienceHint} 常见的焦虑、卡点或阶段性迷茫，更容易引发共鸣。`,
-        highSaveValue: "把经验整理成清晰步骤、检查清单或避坑指南，更容易被收藏。",
-        highDiscussionPotential: "如果你能提出一个和常规认知不同的判断，评论区会更容易出现讨论。"
-      },
-      opportunities: [
-        {
-          name: "真实经历复盘",
-          position: "最适合你",
-          reason: `从你自己的经历切入，最容易建立信任感和个人记忆点。`,
-          targetAudience: audienceHint,
-          contentHook: "用真实踩坑、反转和结果变化，抓住有同样问题的人。",
-          risk: "如果写得太流水账，读者很难快速抓住重点。"
-        },
-        {
-          name: "轻干货经验分享",
-          position: "最容易冷启动",
-          reason: "你可以把已经验证过的方法直接拆成清晰步骤，起步最快。",
-          targetAudience: audienceHint,
-          contentHook: "直接给出 1-2-3 的结构、清单或模板，降低理解门槛。",
-          risk: "如果信息密度不足，会显得普通、难记。"
-        },
-        {
-          name: "主题化长期栏目",
-          position: "最有长期延展",
-          reason: "围绕一个稳定主题持续输出，更容易建立内容识别度和长期积累。",
-          targetAudience: audienceHint,
-          contentHook: "用连载式内容塑造长期观察者或陪伴者的形象。",
-          risk: "需要稳定选题和长期表达耐心。"
-        }
-      ],
-      firstPostBlueprint: {
-        title: `我在 ${backgroundCue} 里踩了3次坑后，才总结出这套 ${topicHint} 起步方法`,
-        coverLine: `${topicHint} 不是你想的那样：我踩坑后总结的3条结论`,
-        hook: `如果你也在 ${topicHint} 上反复卡住，这篇可能能帮你少走半年弯路。`,
-        openingScript: `先讲一个真实场景：我在做 ${backgroundCue} 时，以为越努力越有效，结果连续翻车。`,
-        structure: [
-          "先给结论：真正影响结果的不是努力多少，而是路径是否对",
-          "再讲我的翻车经历：做错了什么、为什么会错",
-          "给出反转洞察：后来我如何调整，哪些动作最关键",
-          "最后给可执行模板：新手今天就能照着做的起步步骤"
-        ],
-        format: "图文清单 / 文字长帖",
-        closingScript: "最后我只保留一个行动建议：先用最小成本发出第一条，再根据反馈迭代。",
-        cta: `你现在在 ${topicHint} 的哪个阶段？评论区留“卡点”，我按高频问题做下一篇。`,
-        trafficSecrets: [
-          "开头 2 句先给反差结论，再讲原因，减少读者流失。",
-          "每一段都带一个具体场景词，避免抽象表达。",
-          "在中段放一个可复制的小模板，提升收藏率。"
-        ],
-        extensionPlan: [
-          "把主帖改写为 30 秒短视频口播稿，保留同一核心结论。",
-          "把正文方法论拆成一张清单图，做二次分发。",
-          "从评论区挑 1 个高频问题，产出一条追更答疑帖。"
-        ]
-      },
-      firstWeekPlan: [
-        {
-          titleIdea: "先讲一个最能代表你的真实经历或阶段变化",
-          angle: "从一个具体场景切入，让别人先理解你是谁、为什么会关心这个主题。",
-          format: "图文"
-        },
-        {
-          titleIdea: "分享一个你最有发言权的经验或方法",
-          angle: "把你的经历提炼成别人可以直接复用的步骤、清单或方法。",
-          format: "清单"
-        },
-        {
-          titleIdea: "做一期你想长期更新的主题试水",
-          angle: "用一条内容测试大家对你核心方向的反馈，再决定是否继续深挖。",
-          format: "短视频"
-        }
-      ],
-      riskAlerts: [
-        "不要一开始覆盖太多主题",
-        "避免只有感受没有细节",
-        "先找到能持续更新的核心方向"
-      ]
-    };
-  }
-
-  function sanitizeReport(raw, input = {}) {
-    const base = fallbackReport(input);
-    if (!raw || typeof raw !== "object") return base;
+  function sanitizeReport(raw) {
+    if (!raw || typeof raw !== "object") return null;
 
     const positions = ["最适合你", "最容易冷启动", "最有长期延展"];
 
@@ -136,64 +22,74 @@ export async function onRequestPost(context) {
       ? raw.opportunities.slice(0, 3).map((item, index) => {
           const current = item && typeof item === "object" ? item : {};
           return {
-            name: toText(current.name, base.opportunities[index].name),
+            name: toText(current.name),
             position: toText(current.position, positions[index]),
-            reason: toText(current.reason, base.opportunities[index].reason),
-            targetAudience: toText(current.targetAudience, base.opportunities[index].targetAudience),
-            contentHook: toText(current.contentHook, base.opportunities[index].contentHook),
-            risk: toText(current.risk, base.opportunities[index].risk),
+            reason: toText(current.reason),
+            targetAudience: toText(current.targetAudience),
+            contentHook: toText(current.contentHook),
+            starterIdea: toText(current.starterIdea),
+            bestFormat: toText(current.bestFormat),
+            risk: toText(current.risk),
           };
-        })
+        }).filter((item) => item.name || item.starterIdea)
       : [];
-
-    while (opportunities.length < 3) {
-      opportunities.push(base.opportunities[opportunities.length]);
-    }
 
     const firstWeekPlan = Array.isArray(raw.firstWeekPlan)
       ? raw.firstWeekPlan.slice(0, 3).map((item, index) => {
           const current = item && typeof item === "object" ? item : {};
           return {
-            titleIdea: toText(current.titleIdea, base.firstWeekPlan[index].titleIdea),
-            angle: toText(current.angle, base.firstWeekPlan[index].angle),
-            format: toText(current.format, base.firstWeekPlan[index].format),
+            titleIdea: toText(current.titleIdea),
+            angle: toText(current.angle),
+            format: toText(current.format),
           };
-        })
+        }).filter((item) => item.titleIdea)
       : [];
 
-    while (firstWeekPlan.length < 3) {
-      firstWeekPlan.push(base.firstWeekPlan[firstWeekPlan.length]);
-    }
-
     return {
-      assetSummary: limitText(raw.assetSummary || base.assetSummary, 100),
-      assetTags: pickStringArray(raw.assetTags, base.assetTags).slice(0, 6),
+      assetSummary: toText(raw.assetSummary),
+      assetTags: pickStringArray(raw.assetTags, []).slice(0, 8),
       differentiation: {
-        coreAngle: toText(raw.differentiation?.coreAngle, base.differentiation.coreAngle),
-        whyYou: toText(raw.differentiation?.whyYou, base.differentiation.whyYou),
-        avoidCommonPath: toText(raw.differentiation?.avoidCommonPath, base.differentiation.avoidCommonPath),
+        coreAngle: toText(raw.differentiation?.coreAngle),
+        whyYou: toText(raw.differentiation?.whyYou),
+        avoidCommonPath: toText(raw.differentiation?.avoidCommonPath),
       },
       trafficPotential: {
-        highResonance: toText(raw.trafficPotential?.highResonance, base.trafficPotential.highResonance),
-        highSaveValue: toText(raw.trafficPotential?.highSaveValue, base.trafficPotential.highSaveValue),
-        highDiscussionPotential: toText(raw.trafficPotential?.highDiscussionPotential, base.trafficPotential.highDiscussionPotential),
+        highResonance: toText(raw.trafficPotential?.highResonance),
+        highSaveValue: toText(raw.trafficPotential?.highSaveValue),
+        highDiscussionPotential: toText(raw.trafficPotential?.highDiscussionPotential),
       },
       opportunities,
       firstPostBlueprint: {
-        title: toText(raw.firstPostBlueprint?.title, base.firstPostBlueprint.title),
-        coverLine: toText(raw.firstPostBlueprint?.coverLine, base.firstPostBlueprint.coverLine),
-        hook: toText(raw.firstPostBlueprint?.hook, base.firstPostBlueprint.hook),
-        openingScript: toText(raw.firstPostBlueprint?.openingScript, base.firstPostBlueprint.openingScript),
-        structure: pickStringArray(raw.firstPostBlueprint?.structure, base.firstPostBlueprint.structure),
-        format: toText(raw.firstPostBlueprint?.format, base.firstPostBlueprint.format),
-        closingScript: toText(raw.firstPostBlueprint?.closingScript, base.firstPostBlueprint.closingScript),
-        cta: toText(raw.firstPostBlueprint?.cta, base.firstPostBlueprint.cta),
-        trafficSecrets: pickStringArray(raw.firstPostBlueprint?.trafficSecrets, base.firstPostBlueprint.trafficSecrets).slice(0, 4),
-        extensionPlan: pickStringArray(raw.firstPostBlueprint?.extensionPlan, base.firstPostBlueprint.extensionPlan).slice(0, 4),
+        title: toText(raw.firstPostBlueprint?.title),
+        postType: toText(raw.firstPostBlueprint?.postType),
+        publishText: toText(raw.firstPostBlueprint?.publishText),
+        publishContent: toText(raw.firstPostBlueprint?.publishContent),
+        extensionPlan: pickStringArray(raw.firstPostBlueprint?.extensionPlan, []).slice(0, 5),
       },
       firstWeekPlan,
-      riskAlerts: pickStringArray(raw.riskAlerts, base.riskAlerts).slice(0, 5),
+      riskAlerts: pickStringArray(raw.riskAlerts, []).slice(0, 8),
     };
+  }
+
+  function tryParseJsonFromText(text) {
+    if (!text) return null;
+
+    const cleaned = String(text)
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    try {
+      return JSON.parse(cleaned);
+    } catch {
+      const matched = cleaned.match(/\{[\s\S]*\}/);
+      if (!matched) return null;
+      try {
+        return JSON.parse(matched[0]);
+      } catch {
+        return null;
+      }
+    }
   }
 
   try {
@@ -239,11 +135,14 @@ export async function onRequestPost(context) {
 2. 不要输出“产品经理”“讲师”“运营”“顾问”等职业名称作为方向。
 3. 内容方向要贴近创作语言，例如真实经历复盘、主题化表达、行业观察、生活方式表达、实操经验分享。
 4. trafficPotential 只能基于用户输入推断，不要假装引用实时热点或外部数据。
-5. firstPostBlueprint 必须像可以直接发布的第一篇帖子方案，包含封面文案、钩子、正文结构、结尾话术、评论区引导。
-6. firstPostBlueprint 还要包含“trafficSecrets”和“extensionPlan”，让用户可以把首篇内容扩散成后续内容。
-7. 所有内容都要具体，避免空泛鼓励和模板化描述。
-8. 必须是合法 JSON。
-9. 标题和正文要尽量贴近用户输入，不要像通用模板。
+5. firstPostBlueprint 必须是“直接可发布成品”，不要写框架说明。
+6. firstPostBlueprint 只输出一个形式：图文 或 视频（二选一），并给完整可发内容。
+7. firstPostBlueprint 必须包含 postType、publishText、publishContent、extensionPlan。
+8. opportunities 要有创意和流量突破感，不要常规化栏目名称。
+9. 每个 opportunities 还要提供 starterIdea（这周直接可发的一条内容）和 bestFormat（图文或视频）。
+10. 所有内容都要具体，避免空泛鼓励和模板化描述。
+11. 必须是合法 JSON。
+12. 标题和正文要尽量贴近用户输入，不要像通用模板。
 
 请返回以下结构：
 {
@@ -266,6 +165,8 @@ export async function onRequestPost(context) {
       "reason": "为什么适合这个人",
       "targetAudience": "适合吸引的人",
       "contentHook": "这个方向的核心钩子与吸引点",
+      "starterIdea": "这周直接可发的一条内容题目",
+      "bestFormat": "图文或视频",
       "risk": "这个方向的主要风险"
     },
     {
@@ -274,6 +175,8 @@ export async function onRequestPost(context) {
       "reason": "为什么更容易起步",
       "targetAudience": "适合吸引的人",
       "contentHook": "这个方向的核心钩子与吸引点",
+      "starterIdea": "这周直接可发的一条内容题目",
+      "bestFormat": "图文或视频",
       "risk": "这个方向的主要风险"
     },
     {
@@ -282,19 +185,16 @@ export async function onRequestPost(context) {
       "reason": "为什么适合长期做",
       "targetAudience": "适合吸引的人",
       "contentHook": "这个方向的核心钩子与吸引点",
+      "starterIdea": "这周直接可发的一条内容题目",
+      "bestFormat": "图文或视频",
       "risk": "这个方向的主要风险"
     }
   ],
   "firstPostBlueprint": {
     "title": "直接可以发的第一篇标题",
-    "coverLine": "封面上最抓眼的第一句话",
-    "hook": "正文开头的黄金三秒钩子",
-    "openingScript": "正文第一段怎么说",
-    "structure": ["第一部分", "第二部分", "第三部分", "第四部分"],
-    "format": "建议的发布形式",
-    "closingScript": "正文结尾怎么收束",
-    "cta": "结尾评论区互动引导",
-    "trafficSecrets": ["能提升完读/收藏/转发的执行细节1", "执行细节2", "执行细节3"],
+    "postType": "图文或视频（只能二选一）",
+    "publishText": "可以直接当文案发出的短文本",
+    "publishContent": "可以直接发布的正文或口播稿，完整连续文本",
     "extensionPlan": ["如何拆成第2条内容", "如何拆成第3条内容", "如何拆成互动答疑内容"]
   },
   "firstWeekPlan": [
@@ -335,29 +235,93 @@ export async function onRequestPost(context) {
       text = JSON.stringify(response);
     }
 
-    const cleaned = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
+    let parsed = tryParseJsonFromText(text);
 
-    let parsed;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch {
-      const matched = cleaned.match(/\{[\s\S]*\}/);
-      parsed = matched ? (() => {
-        try {
-          return JSON.parse(matched[0]);
-        } catch {
-          return fallbackReport({ background, topics, audience, stylePreference, frequency });
-        }
-      })() : fallbackReport({ background, topics, audience, stylePreference, frequency });
+    if (!parsed) {
+      const repairPrompt = `
+你是 JSON 修复助手。请把下面这段模型输出修复为合法 JSON，且严格遵守指定字段结构。
+不要新增说明文字，不要 markdown，只输出 JSON。
+
+必须保留原有内容含义，不能改成模板化文案。
+
+字段结构：
+{
+  "assetSummary": "",
+  "assetTags": [],
+  "differentiation": {
+    "coreAngle": "",
+    "whyYou": "",
+    "avoidCommonPath": ""
+  },
+  "trafficPotential": {
+    "highResonance": "",
+    "highSaveValue": "",
+    "highDiscussionPotential": ""
+  },
+  "opportunities": [
+    {
+      "name": "",
+      "position": "",
+      "reason": "",
+      "targetAudience": "",
+      "contentHook": "",
+      "starterIdea": "",
+      "bestFormat": "",
+      "risk": ""
+    }
+  ],
+  "firstPostBlueprint": {
+    "title": "",
+    "postType": "",
+    "publishText": "",
+    "publishContent": "",
+    "extensionPlan": []
+  },
+  "firstWeekPlan": [
+    {
+      "titleIdea": "",
+      "angle": "",
+      "format": ""
+    }
+  ],
+  "riskAlerts": []
+}
+
+原始输出：
+${text}
+`;
+
+      const repairedResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        prompt: repairPrompt,
+        max_tokens: 1600,
+      });
+
+      let repairedText = "";
+      if (typeof repairedResponse === "string") {
+        repairedText = repairedResponse;
+      } else if (repairedResponse?.response) {
+        repairedText = repairedResponse.response;
+      } else if (repairedResponse?.result?.response) {
+        repairedText = repairedResponse.result.response;
+      } else {
+        repairedText = JSON.stringify(repairedResponse);
+      }
+
+      parsed = tryParseJsonFromText(repairedText);
     }
 
-    return Response.json(
-      sanitizeReport(parsed, { background, topics, audience, stylePreference, frequency }),
-      { status: 200 }
-    );
+    const sanitized = sanitizeReport(parsed);
+    if (!sanitized) {
+      return Response.json(
+        {
+          error: "模型输出格式不稳定，请重试一次",
+          detail: "AI output could not be parsed into required JSON structure"
+        },
+        { status: 502 }
+      );
+    }
+
+    return Response.json(sanitized, { status: 200 });
   } catch (error) {
     return Response.json(
       { error: error.message || "服务异常" },

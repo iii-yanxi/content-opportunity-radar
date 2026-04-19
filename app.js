@@ -71,43 +71,28 @@ function renderBlueprint(data) {
     return;
   }
 
-  const structureHtml = (data.structure || [])
-    .map((s, i) =>
-      '<li><span class="step-num">' + (i + 1) + '</span> ' + escapeHtml(s) + '</li>'
-    )
-    .join("");
-
-  const secretList = (data.trafficSecrets || [])
-    .map((s) => '<li>' + escapeHtml(s) + '</li>')
-    .join("");
-
+  const publishType = escapeHtml(data.postType || data.format || "图文");
+  const publishBody = escapeHtml(data.publishContent || data.contentBody || "");
+  const postText = escapeHtml(data.publishText || data.coverLine || "");
   const extensionList = (data.extensionPlan || [])
     .map((s) => '<li>' + escapeHtml(s) + '</li>')
     .join("");
 
   box.innerHTML =
     '<div class="bp-title-wrap">' +
-      '<span class="bp-badge">第一篇内容方案</span>' +
+      '<span class="bp-badge">直接发这一条</span>' +
       '<h3 class="bp-title">' + escapeHtml(data.title) + '</h3>' +
     '</div>' +
     '<div class="bp-details">' +
-      '<div class="bp-row"><strong>封面文案：</strong>' + escapeHtml(data.coverLine || "把你最核心的结论放在封面首行") + '</div>' +
-      '<div class="bp-row"><strong>黄金开头：</strong>' + escapeHtml(data.hook) + '</div>' +
-      '<div class="bp-row"><strong>正文开场白：</strong>' + escapeHtml(data.openingScript || "先给一个反差场景，再抛出你的核心观点") + '</div>' +
-      '<div class="bp-row"><strong>推荐形式：</strong>' + escapeHtml(data.format) + '</div>' +
-      '<div class="bp-row"><strong>结尾文案：</strong>' + escapeHtml(data.closingScript || "收束核心观点，并给出下一步可执行动作") + '</div>' +
-      '<div class="bp-row"><strong>互动引导：</strong>' + escapeHtml(data.cta) + '</div>' +
+      '<div class="bp-row"><strong>发布形式：</strong>' + publishType + '</div>' +
+      '<div class="bp-row"><strong>发布文案：</strong>' + (postText || "按正文第一段作为文案直接发布") + '</div>' +
     '</div>' +
     '<div class="bp-structure">' +
-      '<h4>正文结构参考：</h4>' +
-      '<ul>' + structureHtml + '</ul>' +
+      '<h4>直接可发内容：</h4>' +
+      '<p class="bp-direct">' + (publishBody || "暂无正文，请重试生成") + '</p>' +
     '</div>' +
     '<div class="bp-structure">' +
-      '<h4>流量密码（可直接套用）：</h4>' +
-      '<ul>' + (secretList || '<li>前 2 句先给结论，再补原因，降低跳出率。</li>') + '</ul>' +
-    '</div>' +
-    '<div class="bp-structure">' +
-      '<h4>延展扩散（1条内容拆3条）：</h4>' +
+      '<h4>延展扩散（同主题继续吃流量）：</h4>' +
       '<ul>' + (extensionList || '<li>把主帖拆成复盘版、清单版、观点版三条内容。</li>') + '</ul>' +
     '</div>';
 }
@@ -130,10 +115,10 @@ function renderOpportunities(list) {
       '<span class="rank">方向 ' + escapeHtml(item.position || "-") + '</span>' +
       '<h3>' + escapeHtml(item.name || "未命名方向") + '</h3>' +
       '</div>' +
-      '<p><span class="item-label">为什么适合过往经历</span>' + escapeHtml(item.reason || "-") + '</p>' +
-      '<p><span class="item-label">核心钩子与吸引点</span>' + escapeHtml(item.contentHook || "-") + '</p>' +
+      '<p><span class="item-label">这一方向会火的原因</span>' + escapeHtml(item.contentHook || item.reason || "-") + '</p>' +
+      '<p><span class="item-label">这周直接发这一条</span>' + escapeHtml(item.starterIdea || "先发一个真实场景 + 反转结论的内容") + '</p>' +
       '<div class="opp-bottom">' +
-        '<div class="opp-bottom-item"><span class="item-label">适合人群</span>' + escapeHtml(item.targetAudience || "-") + '</div>' +
+        '<div class="opp-bottom-item"><span class="item-label">建议形式</span>' + escapeHtml(item.bestFormat || "图文") + '</div>' +
         '<div class="opp-bottom-item"><span class="item-label">风险提示</span>' + escapeHtml(item.risk || "-") + '</div>' +
       '</div>';
     box.appendChild(div);
