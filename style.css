@@ -763,29 +763,22 @@ button:disabled {
   font-weight: 800;
 }
 
-.risk-container {
-  display: grid;
-  gap: 14px;
+.field-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
-.risk-summary {
-  margin: 0;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: #eee9f4;
-  color: #615770;
-  color: #45305f;
-
-.voice-field {
-  position: relative;
+.field-title-row label {
+  margin-bottom: 0;
 }
 
 .voice-btn {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
   padding: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.94);
@@ -795,6 +788,11 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
+}
+
+.title-voice-btn {
+  margin-top: -2px;
 }
 
 .voice-btn:hover {
@@ -844,92 +842,93 @@ button:disabled {
   border-radius: 2px;
 }
 
-.voice-field textarea,
-.voice-field input {
-  padding-right: 42px;
-}
-
-.timeline-horizontal {
+.week-timeline {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  align-items: start;
+  gap: 16px;
 }
 
-.timeline-h-item {
+.week-axis {
   position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(92px, 1fr));
+  gap: 10px;
+  padding: 12px 0 2px;
+  overflow-x: auto;
 }
 
-.timeline-h-dot {
+.week-axis-line {
+  position: absolute;
+  top: 17px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(116, 93, 144, 0.2) 0%, rgba(116, 93, 144, 0.45) 45%, rgba(116, 93, 144, 0.2) 100%);
+}
+
+.week-point {
+  min-width: 92px;
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  z-index: 1;
+}
+
+.week-point-dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #8c8098;
-  box-shadow: 0 0 0 5px rgba(140, 128, 152, 0.12);
-  margin: 0 auto 10px;
+  background: #837094;
+  box-shadow: 0 0 0 5px rgba(131, 112, 148, 0.16);
 }
 
-.timeline-h-link {
-  position: absolute;
-  top: 6px;
-  left: calc(50% + 10px);
-  width: calc(100% - 8px);
-  height: 2px;
-  background: linear-gradient(90deg, rgba(116, 93, 144, 0.25) 0%, rgba(116, 93, 144, 0.08) 100%);
+.week-point-day {
+  color: #6f5f83;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
-.timeline-h-card {
-  border-radius: 14px;
-  border: 1px solid #e4dde8;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfafc 100%);
-  padding: 12px;
-  min-height: 130px;
-  box-shadow: 0 8px 16px rgba(77, 62, 96, 0.05);
+.week-point strong {
+  color: #4e435f;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 700;
 }
 
-.timeline-h-card .plan-index {
-  margin-bottom: 8px;
-}
-
-.timeline-h-card h3 {
-  margin: 0 0 8px;
-  font-size: 14px;
-  line-height: 1.4;
-  color: #4f475f;
-}
-
-.timeline-h-card p {
-  margin: 0;
-  color: #5a5269;
-  line-height: 1.6;
-  font-size: 13px;
-}
-
-.timeline-note {
-  margin: 0;
-  color: #6d647b;
-  font-size: 13px;
-  line-height: 1.7;
-}
-  line-height: 1.8;
-}
-
-.risk-details {
+.week-details {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.risk-item {
-  padding: 14px 15px;
-  border: 1px solid #e5deea;
-  background: linear-gradient(180deg, #fcfbfd 0%, #f6f2f8 100%);
-  color: #494253;
+.week-detail-card {
+  border-radius: 16px;
+  border: 1px solid #e4dde8;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfafc 100%);
+  padding: 13px;
+  box-shadow: 0 8px 16px rgba(77, 62, 96, 0.05);
 }
 
+.week-detail-card h3 {
+  margin: 0 0 8px;
+  color: #4f475f;
+  font-size: 15px;
+  line-height: 1.4;
+}
 
-.risk-paragraph {
-  white-space: pre-wrap;
+.week-detail-card p {
+  margin: 8px 0 0;
+  color: #575062;
+  line-height: 1.66;
+  font-size: 13px;
+}
 
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
   to {
     opacity: 1;
     transform: translateY(0);
@@ -947,7 +946,6 @@ button:disabled {
 
   .opportunities-card,
   .asset-card,
-  .risk-card,
   .insights-card {
     grid-column: span 12;
   }
@@ -1014,34 +1012,11 @@ button:disabled {
     min-width: 520px;
   }
 
-  .timeline {
-    padding-left: 0;
+  .week-axis {
+    grid-template-columns: repeat(7, minmax(84px, 1fr));
   }
 
-  .timeline-horizontal {
+  .week-details {
     grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .timeline-h-dot {
-    margin: 0 0 8px;
-  }
-
-  .timeline-h-link {
-    display: none;
-  }
-
-  .timeline-h-card {
-    min-height: auto;
-  }
-
-  .voice-btn {
-    right: 8px;
-    top: 8px;
-  }
-
-  .voice-field textarea,
-  .voice-field input {
-    padding-right: 40px;
   }
 }

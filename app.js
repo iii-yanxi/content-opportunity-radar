@@ -31,17 +31,6 @@ function renderTags(tags) {
   });
 }
 
-function insertTextAtCursor(field, text) {
-  const value = field.value || "";
-  const start = field.selectionStart ?? value.length;
-  const end = field.selectionEnd ?? value.length;
-  const nextValue = value.slice(0, start) + text + value.slice(end);
-  field.value = nextValue;
-  const cursor = start + text.length;
-  field.setSelectionRange(cursor, cursor);
-  field.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
 function attachVoiceInputButtons() {
   const buttons = document.querySelectorAll("[data-voice-for]");
   buttons.forEach((button) => {
@@ -61,7 +50,33 @@ function attachVoiceInputButtons() {
     recognition.continuous = false;
     recognition.interimResults = true;
 
-    let finalText = "";
+    let finalChunks = [];
+    let interimChunk = "";
+    let capturePrefix = "";
+    let captureSuffix = "";
+    let separator = "";
+
+    const resetChunks = () => {
+      finalChunks = [];
+      interimChunk = "";
+    };
+
+    const resolveSeparator = () => {
+      if (!capturePrefix) return "";
+      if (/\s$/.test(capturePrefix)) return "";
+      return field.tagName === "TEXTAREA" ? "\n" : " ";
+    };
+
+    const writeLiveTranscript = () => {
+      const liveText = (finalChunks.join("") + interimChunk).trim();
+      const merged = liveText ? `${capturePrefix}${separator}${liveText}${captureSuffix}` : `${capturePrefix}${captureSuffix}`;
+      field.value = merged;
+
+      const caret = (capturePrefix + (liveText ? separator + liveText : "")).length;
+      field.setSelectionRange(caret, caret);
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      return liveText;
+    };
 
     const stopVoice = (resetLabel = true) => {
       voiceControllers.delete(fieldId);
@@ -70,37 +85,35 @@ function attachVoiceInputButtons() {
     };
 
     recognition.onresult = (event) => {
-      let transcript = "";
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        transcript += event.results[index][0].transcript;
+      const snapshotFinal = [];
+      let snapshotInterim = "";
+
+      for (let index = 0; index < event.results.length; index += 1) {
+        const fragment = event.results[index][0].transcript || "";
+        if (event.results[index].isFinal) {
+          snapshotFinal.push(fragment);
+        } else {
+          snapshotInterim += fragment;
+        }
       }
 
-      if (event.results[event.results.length - 1]?.isFinal) {
-        finalText = transcript.trim();
-        return;
-      }
+      finalChunks = snapshotFinal;
+      interimChunk = snapshotInterim;
 
-      const liveText = transcript.trim();
-      button.dataset.liveText = liveText;
+      const liveText = writeLiveTranscript();
       button.title = liveText || "正在识别";
     };
 
     recognition.onend = () => {
-      const liveText = button.dataset.liveText || "";
-      const transcript = finalText || liveText;
-      if (transcript) {
-        const joined = field.value.trim();
-        const addition = joined ? (field.tagName === "TEXTAREA" ? "\n" : " ") + transcript : transcript;
-        insertTextAtCursor(field, addition);
-      }
-      delete button.dataset.liveText;
-      finalText = "";
+      writeLiveTranscript();
+      resetChunks();
       stopVoice(true);
+      statusEl.textContent = "语音输入完成。";
+      statusEl.dataset.state = "success";
     };
 
     recognition.onerror = () => {
-      delete button.dataset.liveText;
-      finalText = "";
+      resetChunks();
       stopVoice(true);
       statusEl.textContent = "语音输入暂时不可用，请再试一次。";
       statusEl.dataset.state = "error";
@@ -115,6 +128,11 @@ function attachVoiceInputButtons() {
         }
         return;
       }
+
+      capturePrefix = field.value.slice(0, field.selectionStart ?? field.value.length);
+      captureSuffix = field.value.slice(field.selectionEnd ?? field.value.length);
+      separator = resolveSeparator();
+      resetChunks();
 
       voiceControllers.set(fieldId, recognition);
       button.classList.add("is-recording");
@@ -341,109 +359,39 @@ function renderPlan(list) {
     return;
   }
 
-  const keyIndexes = [0, 2, 4, 6].filter((index) => index < list.length);
-  const keyNodes = keyIndexes.map((index) => ({ item: list[index], day: index + 1 }));
+  const timeline = document.createElement("section");
+  timeline.className = "week-timeline";
 
-  const timeline = document.createElement("div");
-  timeline.className = "timeline-horizontal";
+  const axis = document.createElement("div");
+  axis.className = "week-axis";
+  axis.innerHTML = '<div class="week-axis-line" aria-hidden="true"></div>';
 
-  keyNodes.forEach(({ item, day }, index) => {
-    const div = document.createElement("article");
-    div.className = "timeline-h-item " + getPlanTone(index);
-    div.innerHTML =
-      '<div class="timeline-h-dot"></div>' +
-      '<div class="timeline-h-card">' +
-        '<div class="plan-index">Day ' + day + '</div>' +
-        '<h3>' + escapeHtml(item.phase || "关键节点") + '</h3>' +
-        '<p>' + escapeHtml(item.feedbackFocus || item.angle || "-") + '</p>' +
-      '</div>';
-
-    if (index < keyNodes.length - 1) {
-      div.innerHTML += '<div class="timeline-h-link" aria-hidden="true"></div>';
-    }
-
-    timeline.appendChild(div);
+  list.forEach((item, index) => {
+    const point = document.createElement("article");
+    point.className = "week-point " + getPlanTone(index);
+    point.innerHTML =
+      '<span class="week-point-dot" aria-hidden="true"></span>' +
+      '<span class="week-point-day">Day ' + (index + 1) + '</span>' +
+      '<strong>' + escapeHtml(item.phase || "执行") + '</strong>';
+    axis.appendChild(point);
   });
 
-  const footer = document.createElement("p");
-  footer.className = "timeline-note";
-  footer.textContent = "关键节奏：先验证切口，再看反馈，然后放大有效表达，最后沉淀成可持续节奏。";
+  const detailWrap = document.createElement("div");
+  detailWrap.className = "week-details";
+  list.forEach((item, index) => {
+    const detail = document.createElement("article");
+    detail.className = "week-detail-card " + getPlanTone(index);
+    detail.innerHTML =
+      '<div class="plan-index">Day ' + (index + 1) + '</div>' +
+      '<h3>' + escapeHtml(item.angle || item.phase || "当天任务") + '</h3>' +
+      '<p><span class="item-label">执行动作</span>' + escapeHtml(item.action || "按当天主题产出并发布一条内容") + '</p>' +
+      '<p><span class="item-label">观察反馈</span>' + escapeHtml(item.feedbackFocus || "记录评论、收藏、私信里出现最多的关键词") + '</p>';
+    detailWrap.appendChild(detail);
+  });
 
+  timeline.appendChild(axis);
+  timeline.appendChild(detailWrap);
   box.appendChild(timeline);
-  box.appendChild(footer);
-}
-
-function renderRisks(data) {
-  const box = document.getElementById("riskAlerts");
-  if (!box) return;
-  box.innerHTML = "";
-
-  const normalizeChineseText = (text) => {
-    return String(text || "")
-      .replace(/[\u00A0\t\n\r]+/g, " ")
-      .replace(/\s*([，。；：！？])/g, "$1")
-      .replace(/([（《“])\s+/g, "$1")
-      .replace(/\s+([）》”])/g, "$1")
-      .replace(/([\u4e00-\u9fff])\s+([\u4e00-\u9fff])/g, "$1$2")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
-  const ensureEndPunctuation = (text) => {
-    if (!text) return "";
-    return /[。！？]$/.test(text) ? text : `${text}。`;
-  };
-
-  const toGentleSentence = (risk, mitigation) => {
-    const riskText = normalizeChineseText(risk);
-    const solutionText = normalizeChineseText(mitigation);
-    if (riskText && solutionText) {
-      return `如果你发现自己${riskText}，可以先${solutionText}`;
-    }
-    return riskText || solutionText;
-  };
-
-  const composeRiskParagraph = (source) => {
-    const summary = normalizeChineseText(source?.summary || "");
-    const details = Array.isArray(source?.details) ? source.details : [];
-    const encouragement = normalizeChineseText(source?.encouragement || "");
-
-    const guidance = details
-      .map((item) => toGentleSentence(item?.risk, item?.mitigation))
-      .filter(Boolean);
-
-    const chunks = [];
-    if (summary) chunks.push(summary);
-    if (guidance.length) {
-      chunks.push(`你可以这样处理：${guidance.join("；")}`);
-    }
-    if (encouragement) chunks.push(encouragement);
-
-    return ensureEndPunctuation(chunks.join("。"));
-  };
-
-  if (Array.isArray(data)) {
-    if (!data.length) {
-      box.innerHTML = '<p class="empty-note">当前无明显风险提醒。</p>';
-      return;
-    }
-
-    const paragraph = document.createElement("p");
-    paragraph.className = "risk-summary risk-paragraph";
-    paragraph.textContent = ensureEndPunctuation(normalizeChineseText(data.join("。")));
-    box.appendChild(paragraph);
-    return;
-  }
-
-  if (!data || typeof data !== "object") {
-    box.innerHTML = '<p class="empty-note">当前无明显风险提醒。</p>';
-    return;
-  }
-
-  const paragraph = document.createElement("p");
-  paragraph.className = "risk-summary risk-paragraph";
-  paragraph.textContent = composeRiskParagraph(data);
-  box.appendChild(paragraph);
 }
 
 generateBtn.addEventListener("click", async () => {
@@ -487,7 +435,6 @@ generateBtn.addEventListener("click", async () => {
     renderOpportunities(data.opportunities || []);
     renderBlueprint(data.firstPostBlueprint || {});
     renderPlan(data.firstWeekPlan || []);
-    renderRisks(data.riskAlerts || {});
 
     resultEl.classList.remove("hidden");
     statusEl.textContent = "生成完成。";
