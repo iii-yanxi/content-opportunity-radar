@@ -3,77 +3,98 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>内容机会雷达</title>
+  <title>自媒体冷启动内容策略助手</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <main class="container">
     <section class="hero">
-      <h1>内容机会雷达</h1>
-      <p>先识别你有什么可做的内容资产，再判断什么值得做。</p>
+      <p class="hero-kicker">Content Radar Studio</p>
+      <h1>自媒体冷启动内容策略助手</h1>
+      <p class="hero-subtitle">帮你找到适合自己的自媒体内容方向、差异化切口和第一篇可发布方案</p>
+      <p class="hero-desc">把你已有的经历、关注议题和目标受众，整理成一套可执行的冷启动内容路线图。</p>
     </section>
 
     <section class="card form-card">
+      <div class="form-note">
+        <h2>开始生成你的内容策略</h2>
+        <p>适合还没想清楚该发什么、怎么发、为什么别人会关注自己的创作者。</p>
+      </div>
+
       <div class="field">
         <label for="background">经历 / 优势</label>
-        <textarea id="background" placeholder="例如：计算机硕士、AI项目、实习经历、成长记录、审美表达"></textarea>
+        <textarea id="background" placeholder="可写：你做过的事、解决过的问题、长期兴趣、可分享的经验（如：跨专业转行、带团队项目、城市生活观察、技能自学过程）"></textarea>
       </div>
 
       <div class="field">
         <label for="topics">想表达的主题</label>
-        <textarea id="topics" placeholder="例如：AI、求职、成长、生活方式、品牌内容"></textarea>
+        <textarea id="topics" placeholder="可写：你想持续聊的方向（如：职业成长、效率方法、行业观察、消费决策、兴趣文化、个人表达）"></textarea>
       </div>
 
-      <div class="field">
-        <label for="audience">想吸引的人群</label>
-        <input id="audience" type="text" placeholder="例如：女大学生、求职者、品牌运营、新手创作者" />
-      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="audience">想吸引的人群</label>
+          <input id="audience" type="text" placeholder="可写：你最想帮助或连接的人（如：刚入行新人、备考群体、小团队负责人、想开始创作的人）" />
+        </div>
 
-      <div class="field">
-        <label for="stylePreference">表达方式偏好</label>
-        <select id="stylePreference">
-          <option>真诚记录</option>
-          <option>干货分享</option>
-          <option>观点表达</option>
-          <option>故事化讲述</option>
-          <option>还不确定</option>
-        </select>
-      </div>
+        <div class="field">
+          <label for="stylePreference">表达方式偏好</label>
+          <select id="stylePreference">
+            <option>真诚记录</option>
+            <option>干货分享</option>
+            <option>观点表达</option>
+            <option>故事化讲述</option>
+            <option>还不确定</option>
+          </select>
+        </div>
 
-      <div class="field">
-        <label for="frequency">每周更新频率</label>
-        <select id="frequency">
-          <option>1次</option>
-          <option>2-3次</option>
-          <option>4次以上</option>
-        </select>
+        <div class="field">
+          <label for="frequency">每周更新频率</label>
+          <select id="frequency">
+            <option>1次</option>
+            <option>2-3次</option>
+            <option>4次以上</option>
+          </select>
+        </div>
       </div>
 
       <button id="generateBtn">生成内容机会报告</button>
       <p id="status" class="status"></p>
     </section>
 
-    <section id="result" class="result hidden">
-      <div class="card">
-        <h2>内容资产识别</h2>
-        <p id="assetSummary"></p>
+    <section id="result" class="result hidden" aria-live="polite">
+      <article class="card asset-card">
+        <div class="section-head">
+          <p class="section-label">Asset Summary</p>
+          <h2>你的内容资产识别</h2>
+        </div>
+        <p id="assetSummary" class="asset-summary"></p>
         <div id="assetTags" class="tags"></div>
-      </div>
+      </article>
 
-      <div class="card">
-        <h2>推荐内容方向</h2>
-        <div id="opportunities"></div>
-      </div>
+      <article class="card opportunities-card">
+        <div class="section-head">
+          <p class="section-label">Opportunities</p>
+          <h2>推荐内容方向</h2>
+        </div>
+        <div id="opportunities" class="opportunity-list"></div>
+      </article>
 
-      <div class="card">
-        <h2>第一周动作包</h2>
-        <div id="firstWeekPlan"></div>
-      </div>
+      <article class="card spotlight-card">
+        <div class="section-head">
+          <p class="section-label">Launch Pack</p>
+          <h2>第一周动作包</h2>
+        </div>
+        <div id="firstWeekPlan" class="plan-list"></div>
+      </article>
 
-      <div class="card">
-        <h2>风险提醒</h2>
-        <ul id="riskAlerts"></ul>
-      </div>
+      <article class="card risk-card">
+        <div class="section-head">
+          <p class="section-label">Risk Alerts</p>
+          <h2>风险提醒</h2>
+        </div>
+        <ul id="riskAlerts" class="risk-list"></ul>
+      </article>
     </section>
   </main>
 
