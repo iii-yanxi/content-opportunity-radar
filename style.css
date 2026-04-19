@@ -284,8 +284,9 @@ button:disabled {
 }
 
 .progress-track.is-indeterminate .progress-fill {
-  width: 34%;
+  width: 34% !important;
   animation: progressIndeterminate 1.2s ease-in-out infinite;
+  will-change: transform;
 }
 
 .progress-track:not(.is-indeterminate) .progress-fill {

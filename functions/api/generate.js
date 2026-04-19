@@ -391,23 +391,29 @@ export async function onRequestPost(context) {
 }
 `;
 
-    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-      prompt,
-      max_tokens: 1600,
-    });
+    const runFastModel = async (promptText, maxTokens) => {
+      return env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        prompt: promptText,
+        max_tokens: maxTokens,
+      });
+    };
 
-    let text = "";
-    if (typeof response === "string") {
-      text = response;
-    } else if (response?.response) {
-      text = response.response;
-    } else if (response?.result?.response) {
-      text = response.result.response;
-    } else {
-      text = JSON.stringify(response);
+    const readResponseText = (response) => {
+      if (typeof response === "string") return response;
+      if (response?.response) return response.response;
+      if (response?.result?.response) return response.result.response;
+      return JSON.stringify(response);
+    };
+
+    const retryPrompt = `${prompt}\n\n再次强调：只返回一个合法 JSON 对象，不要任何解释，不要 markdown，不要代码块。`;
+
+    let text = readResponseText(await runFastModel(prompt, 1600));
+    let parsed = tryParseJsonFromText(text);
+
+    if (!parsed) {
+      text = readResponseText(await runFastModel(retryPrompt, 2200));
+      parsed = tryParseJsonFromText(text);
     }
-
-    const parsed = tryParseJsonFromText(text);
 
     if (!parsed) {
       return Response.json(
@@ -419,7 +425,13 @@ export async function onRequestPost(context) {
       );
     }
 
-    const sanitized = sanitizeReport(parsed);
+    let sanitized = sanitizeReport(parsed);
+    if (!sanitized || !hasValidReportContent(sanitized)) {
+      text = readResponseText(await runFastModel(retryPrompt, 2200));
+      parsed = tryParseJsonFromText(text);
+      sanitized = sanitizeReport(parsed);
+    }
+
     if (!sanitized || !hasValidReportContent(sanitized)) {
       return Response.json(
         {

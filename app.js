@@ -15,7 +15,11 @@ function updateProgress(percent, label) {
 
   const safePercent = Math.max(0, Math.min(100, percent));
   progressPercent = safePercent;
-  progressFillEl.style.width = `${safePercent.toFixed(1)}%`;
+  if (progressTrackEl?.classList.contains("is-indeterminate")) {
+    progressFillEl.style.width = "";
+  } else {
+    progressFillEl.style.width = `${safePercent.toFixed(1)}%`;
+  }
   if (progressTrackEl) {
     progressTrackEl.setAttribute("aria-valuenow", String(Math.round(safePercent)));
   }
