@@ -7,58 +7,67 @@ const progressFillEl = document.getElementById("progressFill");
 const progressLabelEl = document.getElementById("progressLabel");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const voiceControllers = new Map();
+const ESTIMATED_PROGRESS_MS = 30000;
 let progressStartedAt = 0;
 let progressPercent = 0;
+let progressAutoTimer = null;
 
 function updateProgress(percent, label) {
   if (!generationProgressEl || !progressFillEl || !progressLabelEl) return;
 
   const safePercent = Math.max(0, Math.min(100, percent));
   progressPercent = safePercent;
-  if (progressTrackEl?.classList.contains("is-indeterminate")) {
-    progressFillEl.style.width = "";
-  } else {
-    progressFillEl.style.width = `${safePercent.toFixed(1)}%`;
-  }
+  progressFillEl.style.width = `${safePercent.toFixed(1)}%`;
   if (progressTrackEl) {
     progressTrackEl.setAttribute("aria-valuenow", String(Math.round(safePercent)));
+    progressTrackEl.removeAttribute("aria-valuetext");
+    progressTrackEl.classList.remove("is-indeterminate");
   }
   progressLabelEl.textContent = label;
 }
 
-function setIndeterminateProgress(enabled) {
-  if (!progressTrackEl) return;
-  if (enabled) {
-    progressTrackEl.classList.add("is-indeterminate");
-    progressTrackEl.removeAttribute("aria-valuenow");
-    progressTrackEl.setAttribute("aria-valuetext", "正在处理中");
-    return;
-  }
-
-  progressTrackEl.classList.remove("is-indeterminate");
-  progressTrackEl.removeAttribute("aria-valuetext");
-  progressTrackEl.setAttribute("aria-valuenow", String(Math.round(progressPercent)));
-}
-
-function markGenerationStage(percent, label, indeterminate = false) {
+function markGenerationStage(percent, label) {
   const safePercent = Math.max(progressPercent, Math.min(99, percent));
-  setIndeterminateProgress(indeterminate);
   updateProgress(safePercent, label);
 }
 
 function startGenerationProgress() {
   if (!generationProgressEl) return;
 
+  if (progressAutoTimer) {
+    clearInterval(progressAutoTimer);
+    progressAutoTimer = null;
+  }
+
   generationProgressEl.classList.remove("hidden");
   progressStartedAt = Date.now();
   progressPercent = 0;
-  markGenerationStage(8, "已提交请求，等待服务端生成...", true);
+  markGenerationStage(8, "已提交请求，正在生成内容策略...");
+
+  progressAutoTimer = window.setInterval(() => {
+    const elapsed = Date.now() - progressStartedAt;
+    let target = 8;
+
+    if (elapsed <= ESTIMATED_PROGRESS_MS) {
+      const ratio = elapsed / ESTIMATED_PROGRESS_MS;
+      target = 8 + ratio * 84;
+    } else {
+      target = Math.min(96, 92 + (elapsed - ESTIMATED_PROGRESS_MS) / 5000);
+    }
+
+    if (target > progressPercent) {
+      updateProgress(target, "正在生成内容策略报告...");
+    }
+  }, 300);
 }
 
 function finishGenerationProgress(success) {
   if (!generationProgressEl) return;
 
-  setIndeterminateProgress(false);
+  if (progressAutoTimer) {
+    clearInterval(progressAutoTimer);
+    progressAutoTimer = null;
+  }
 
   if (success) {
     updateProgress(100, "报告生成完成");

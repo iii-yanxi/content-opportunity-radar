@@ -407,11 +407,11 @@ export async function onRequestPost(context) {
 
     const retryPrompt = `${prompt}\n\n再次强调：只返回一个合法 JSON 对象，不要任何解释，不要 markdown，不要代码块。`;
 
-    let text = readResponseText(await runFastModel(prompt, 1600));
+    let text = readResponseText(await runFastModel(prompt, 1500));
     let parsed = tryParseJsonFromText(text);
 
     if (!parsed) {
-      text = readResponseText(await runFastModel(retryPrompt, 2200));
+      text = readResponseText(await runFastModel(retryPrompt, 2000));
       parsed = tryParseJsonFromText(text);
     }
 
@@ -427,7 +427,7 @@ export async function onRequestPost(context) {
 
     let sanitized = sanitizeReport(parsed);
     if (!sanitized || !hasValidReportContent(sanitized)) {
-      text = readResponseText(await runFastModel(retryPrompt, 2200));
+      text = readResponseText(await runFastModel(retryPrompt, 2000));
       parsed = tryParseJsonFromText(text);
       sanitized = sanitizeReport(parsed);
     }
