@@ -286,6 +286,24 @@ button:disabled {
   transition: width 0.24s linear;
 }
 
+.progress-track.is-indeterminate .progress-fill {
+  width: 34%;
+  animation: progressIndeterminate 1.2s ease-in-out infinite;
+}
+
+.progress-track:not(.is-indeterminate) .progress-fill {
+  animation: none;
+}
+
+@keyframes progressIndeterminate {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
 .hidden {
   display: none;
 }

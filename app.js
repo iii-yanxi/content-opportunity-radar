@@ -8,54 +8,23 @@ const progressLabelEl = document.getElementById("progressLabel");
 const progressEtaEl = document.getElementById("progressEta");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const voiceControllers = new Map();
-const ESTIMATED_GENERATION_MS = 22000;
-let progressTimer = null;
+let progressElapsedTimer = null;
 let progressStartedAt = 0;
-let progressFloorPercent = 0;
-let progressFloorLabel = "";
+let progressPercent = 0;
 
-const generationStages = [
-  {
-    label: "正在校验输入信息...",
-    start: 4,
-    end: 18,
-    duration: 1800,
-  },
-  {
-    label: "正在连接模型服务...",
-    start: 18,
-    end: 34,
-    duration: 3200,
-  },
-  {
-    label: "模型正在生成核心策略...",
-    start: 34,
-    end: 80,
-    duration: 12000,
-  },
-  {
-    label: "正在解析返回结果...",
-    start: 80,
-    end: 92,
-    duration: 3200,
-  },
-  {
-    label: "正在排版报告模块...",
-    start: 92,
-    end: 98,
-    duration: 1800,
-  },
-];
-
-function formatEta(ms) {
-  const seconds = Math.max(1, Math.ceil(ms / 1000));
-  return `预计剩余 ${seconds} 秒`;
+function formatElapsed(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  if (totalSeconds < 60) return `已等待 ${totalSeconds} 秒`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `已等待 ${minutes} 分 ${seconds} 秒`;
 }
 
 function updateProgress(percent, label, etaText) {
   if (!generationProgressEl || !progressFillEl || !progressLabelEl || !progressEtaEl) return;
 
   const safePercent = Math.max(0, Math.min(100, percent));
+  progressPercent = safePercent;
   progressFillEl.style.width = `${safePercent.toFixed(1)}%`;
   if (progressTrackEl) {
     progressTrackEl.setAttribute("aria-valuenow", String(Math.round(safePercent)));
@@ -64,78 +33,63 @@ function updateProgress(percent, label, etaText) {
   progressEtaEl.textContent = etaText;
 }
 
-function markGenerationStage(percent, label) {
-  const safePercent = Math.max(0, Math.min(99, percent));
-  progressFloorPercent = Math.max(progressFloorPercent, safePercent);
-  progressFloorLabel = label || progressFloorLabel;
+function setIndeterminateProgress(enabled) {
+  if (!progressTrackEl) return;
+  if (enabled) {
+    progressTrackEl.classList.add("is-indeterminate");
+    progressTrackEl.removeAttribute("aria-valuenow");
+    progressTrackEl.setAttribute("aria-valuetext", "正在处理中");
+    return;
+  }
 
-  const elapsed = Date.now() - progressStartedAt;
-  const etaText = elapsed <= ESTIMATED_GENERATION_MS
-    ? formatEta(ESTIMATED_GENERATION_MS - elapsed)
-    : "预计剩余几秒";
+  progressTrackEl.classList.remove("is-indeterminate");
+  progressTrackEl.removeAttribute("aria-valuetext");
+  progressTrackEl.setAttribute("aria-valuenow", String(Math.round(progressPercent)));
+}
 
-  updateProgress(progressFloorPercent, progressFloorLabel || "正在生成报告内容...", etaText);
+function markGenerationStage(percent, label, indeterminate = false) {
+  const safePercent = Math.max(progressPercent, Math.min(99, percent));
+  const elapsedText = formatElapsed(Date.now() - progressStartedAt);
+  setIndeterminateProgress(indeterminate);
+  updateProgress(safePercent, label, `${elapsedText}（时长取决于模型负载）`);
 }
 
 function startGenerationProgress() {
   if (!generationProgressEl) return;
 
-  if (progressTimer) {
-    clearInterval(progressTimer);
-    progressTimer = null;
+  if (progressElapsedTimer) {
+    clearInterval(progressElapsedTimer);
+    progressElapsedTimer = null;
   }
 
   generationProgressEl.classList.remove("hidden");
   progressStartedAt = Date.now();
-  progressFloorPercent = 4;
-  progressFloorLabel = "正在校验输入信息...";
-  updateProgress(4, "正在分析你的输入信息...", formatEta(ESTIMATED_GENERATION_MS));
+  progressPercent = 0;
+  markGenerationStage(8, "已提交请求，等待服务端生成...", true);
 
-  progressTimer = setInterval(() => {
-    const elapsed = Date.now() - progressStartedAt;
-
-    let consumed = 0;
-    let stagePercent = 98;
-    let stageLabel = "报告马上就好，正在做最后整理...";
-
-    for (const stage of generationStages) {
-      const stageStart = consumed;
-      const stageEnd = consumed + stage.duration;
-      if (elapsed <= stageEnd) {
-        const ratio = Math.max(0, Math.min(1, (elapsed - stageStart) / stage.duration));
-        stagePercent = stage.start + ratio * (stage.end - stage.start);
-        stageLabel = stage.label;
-        break;
-      }
-      consumed = stageEnd;
-    }
-
-    const percent = Math.max(stagePercent, progressFloorPercent);
-    const label = percent === progressFloorPercent && progressFloorLabel ? progressFloorLabel : stageLabel;
-    const etaText = elapsed <= ESTIMATED_GENERATION_MS
-      ? formatEta(ESTIMATED_GENERATION_MS - elapsed)
-      : "预计剩余几秒";
-
-    updateProgress(percent, label, etaText);
+  progressElapsedTimer = setInterval(() => {
+    if (!progressEtaEl) return;
+    progressEtaEl.textContent = `${formatElapsed(Date.now() - progressStartedAt)}（时长取决于模型负载）`;
   }, 250);
 }
 
 function finishGenerationProgress(success) {
   if (!generationProgressEl) return;
 
-  if (progressTimer) {
-    clearInterval(progressTimer);
-    progressTimer = null;
+  if (progressElapsedTimer) {
+    clearInterval(progressElapsedTimer);
+    progressElapsedTimer = null;
   }
+
+  setIndeterminateProgress(false);
+  const totalElapsed = formatElapsed(Date.now() - progressStartedAt);
 
   if (success) {
-    updateProgress(100, "报告生成完成", "已完成");
+    updateProgress(100, "报告生成完成", `${totalElapsed}（已完成）`);
   } else {
-    updateProgress(0, "生成中断，请重试", "--");
+    updateProgress(Math.max(progressPercent, 8), "生成中断，请重试", `${totalElapsed}（请求失败）`);
   }
-
-  progressFloorPercent = 0;
-  progressFloorLabel = "";
+  progressPercent = 0;
 
   window.setTimeout(() => {
     if (!generationProgressEl || !progressFillEl) return;
@@ -555,7 +509,7 @@ generateBtn.addEventListener("click", async () => {
   startGenerationProgress();
 
   try {
-    markGenerationStage(20, "已完成输入校验，正在连接模型...");
+    markGenerationStage(20, "输入校验完成，正在连接模型服务...");
 
     const res = await fetch("/api/generate", {
       method: "POST",
@@ -563,10 +517,10 @@ generateBtn.addEventListener("click", async () => {
       body: JSON.stringify(payload),
     });
 
-    markGenerationStage(76, "模型已返回结果，正在解析...");
+    markGenerationStage(62, "服务端已返回响应，正在读取结果...");
 
     const data = await res.json();
-    markGenerationStage(86, "结果解析完成，正在整理模块...");
+    markGenerationStage(78, "结果解析完成，正在整理模块...");
 
     if (!res.ok) {
       throw new Error(data.error || "生成失败");
@@ -582,7 +536,7 @@ generateBtn.addEventListener("click", async () => {
     renderBlueprint(data.firstPostBlueprint || {});
     renderPlan(data.firstWeekPlan || []);
 
-    markGenerationStage(96, "内容已就绪，正在完成最后排版...");
+    markGenerationStage(94, "内容已就绪，正在完成最后排版...");
 
     resultEl.classList.remove("hidden");
     finishGenerationProgress(true);
