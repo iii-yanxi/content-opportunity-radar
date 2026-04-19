@@ -21,7 +21,7 @@ function renderTags(tags) {
     return;
   }
 
-  tags.forEach(tag => {
+  tags.forEach((tag) => {
     const span = document.createElement("span");
     span.className = "tag";
     span.textContent = tag;
@@ -29,36 +29,105 @@ function renderTags(tags) {
   });
 }
 
-function renderGridList(boxId, dataMap) {
-  const box = document.getElementById(boxId);
-  if (!box) return;
-  box.innerHTML = "";
-  if (!dataMap || typeof dataMap !== "object") return;
+function scoreText(text, keywords) {
+  const value = String(text || "");
+  let score = 2;
 
-  for (const [label, content] of Object.entries(dataMap)) {
-    if (!content) continue;
-    const div = document.createElement("div");
-    div.className = "grid-item";
-    div.innerHTML =
-      '<strong>' + escapeHtml(label) + '</strong>' +
-      '<p>' + escapeHtml(content) + '</p>';
-    box.appendChild(div);
-  }
+  keywords.forEach((keyword) => {
+    if (value.includes(keyword)) {
+      score += 1.2;
+    }
+  });
+
+  if (value.length > 20) score += 0.7;
+  if (value.length > 45) score += 0.7;
+  if (value.length > 70) score += 0.4;
+
+  return Math.max(1.2, Math.min(9.6, Math.round(score * 10) / 10));
 }
 
 function renderDifferentiation(data) {
-  renderGridList("differentiation", {
-    "核心价值切口": data?.coreAngle,
-    "为什么只能你来做": data?.whyYou,
-    "避开的同质化路线": data?.avoidCommonPath,
+  const box = document.getElementById("differentiationTable");
+  if (!box) return;
+  box.innerHTML = "";
+
+  const rows = [
+    {
+      label: "核心切口",
+      generic: "只讲一个很泛的主题，听完还是模糊的。",
+      custom: data?.coreAngle || "-",
+    },
+    {
+      label: "可信度来源",
+      generic: "有观点，但没有你自己的经历入口。",
+      custom: data?.whyYou || "-",
+    },
+    {
+      label: "撞车路线",
+      generic: "顺着别人已经讲烂的表达继续说。",
+      custom: data?.avoidCommonPath || "-",
+    },
+  ];
+
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<th scope="row">' + escapeHtml(row.label) + '</th>' +
+      '<td>' + escapeHtml(row.generic) + '</td>' +
+      '<td>' + escapeHtml(row.custom) + '</td>';
+    box.appendChild(tr);
   });
 }
 
 function renderTrafficPotential(data) {
-  renderGridList("trafficPotential", {
-    "情绪共鸣点": data?.highResonance,
-    "收藏价值点": data?.highSaveValue,
-    "讨论引爆点": data?.highDiscussionPotential,
+  const box = document.getElementById("trafficChart");
+  if (!box) return;
+  box.innerHTML = "";
+
+  const nodes = [
+    {
+      label: "共鸣点",
+      text: data?.highResonance || "-",
+      x: scoreText(data?.highResonance, ["共鸣", "代入", "真实", "情绪", "故事", "反差"]),
+      y: scoreText(data?.highResonance, ["共鸣", "代入", "真实", "情绪", "故事", "反差"]),
+      size: scoreText(data?.highResonance, ["共鸣", "代入", "真实", "情绪", "故事", "反差"]),
+      tone: "tone-one",
+    },
+    {
+      label: "收藏点",
+      text: data?.highSaveValue || "-",
+      x: scoreText(data?.highSaveValue, ["清单", "方法", "模板", "步骤", "复盘", "框架", "可收藏"]),
+      y: scoreText(data?.highSaveValue, ["清单", "方法", "模板", "步骤", "复盘", "框架", "可收藏"]),
+      size: scoreText(data?.highSaveValue, ["清单", "方法", "模板", "步骤", "复盘", "框架", "可收藏"]),
+      tone: "tone-two",
+    },
+    {
+      label: "讨论点",
+      text: data?.highDiscussionPotential || "-",
+      x: scoreText(data?.highDiscussionPotential, ["讨论", "留言", "争议", "观点", "分歧", "反问"]),
+      y: scoreText(data?.highDiscussionPotential, ["讨论", "留言", "争议", "观点", "分歧", "反问"]),
+      size: scoreText(data?.highDiscussionPotential, ["讨论", "留言", "争议", "观点", "分歧", "反问"]),
+      tone: "tone-three",
+    },
+  ];
+
+  nodes.forEach((node) => {
+    const left = Math.min(84, Math.max(10, node.x * 8.5));
+    const top = Math.min(84, Math.max(12, 96 - node.y * 8.2));
+    const size = Math.min(56, Math.max(26, node.size * 4.6));
+
+    const item = document.createElement("article");
+    item.className = "traffic-node " + node.tone;
+    item.style.left = left + "%";
+    item.style.top = top + "%";
+    item.style.setProperty("--node-size", size + "px");
+    item.innerHTML =
+      '<span class="traffic-node-dot"></span>' +
+      '<div class="traffic-node-copy">' +
+        '<strong>' + escapeHtml(node.label) + '</strong>' +
+        '<p>' + escapeHtml(node.text) + '</p>' +
+      '</div>';
+    box.appendChild(item);
   });
 }
 
@@ -66,12 +135,13 @@ function renderBlueprint(data) {
   const box = document.getElementById("firstPostBlueprint");
   if (!box) return;
   box.innerHTML = "";
+
   if (!data || !data.title) {
     box.innerHTML = '<p class="empty-note">暂无第一篇内容建议。</p>';
     return;
   }
 
-  const publishType = escapeHtml(data.postType || data.format || "图文");
+  const publishType = escapeHtml(data.postType || "图文");
   const publishBody = escapeHtml(data.publishContent || data.contentBody || "");
   const postText = escapeHtml(data.publishText || data.coverLine || "");
   const extensionList = (data.extensionPlan || [])
@@ -86,6 +156,20 @@ function renderBlueprint(data) {
     '<div class="bp-details">' +
       '<div class="bp-row"><strong>发布形式：</strong>' + publishType + '</div>' +
       '<div class="bp-row"><strong>发布文案：</strong>' + (postText || "按正文第一段作为文案直接发布") + '</div>' +
+    '</div>' +
+    '<div class="bp-meta-grid">' +
+      '<div class="bp-meta-card">' +
+        '<span>平台倾向</span>' +
+        '<strong>' + escapeHtml(data.platformOptimized || "图文") + '</strong>' +
+      '</div>' +
+      '<div class="bp-meta-card">' +
+        '<span>互动钩子</span>' +
+        '<strong>' + escapeHtml(data.engagementTactic || "把问题丢给评论区") + '</strong>' +
+      '</div>' +
+      '<div class="bp-meta-card bp-meta-card-wide">' +
+        '<span>为什么更容易被看见</span>' +
+        '<strong>' + escapeHtml(data.viralReason || "它有真实经历，也有可转述的细节") + '</strong>' +
+      '</div>' +
     '</div>' +
     '<div class="bp-structure">' +
       '<h4>直接可发内容：</h4>' +
@@ -107,22 +191,39 @@ function renderOpportunities(list) {
     return;
   }
 
-  list.forEach(item => {
+  list.forEach((item) => {
     const div = document.createElement("article");
     div.className = "opportunity-item";
     div.innerHTML =
       '<div class="opportunity-head">' +
-      '<span class="rank">方向 ' + escapeHtml(item.position || "-") + '</span>' +
-      '<h3>' + escapeHtml(item.name || "未命名方向") + '</h3>' +
+        '<span class="rank">方向 ' + escapeHtml(item.position || "-") + '</span>' +
+        '<h3>' + escapeHtml(item.name || "未命名方向") + '</h3>' +
       '</div>' +
-      '<p><span class="item-label">这一方向会火的原因</span>' + escapeHtml(item.contentHook || item.reason || "-") + '</p>' +
+      '<p><span class="item-label">为什么适合你</span>' + escapeHtml(item.reason || "-") + '</p>' +
       '<p><span class="item-label">这周直接发这一条</span>' + escapeHtml(item.starterIdea || "先发一个真实场景 + 反转结论的内容") + '</p>' +
+      '<div class="opp-grid">' +
+        '<div class="opp-grid-item">' +
+          '<span class="item-label">创意突破点</span>' +
+          '<strong>' + escapeHtml(item.creativeAngle || "-") + '</strong>' +
+        '</div>' +
+        '<div class="opp-grid-item">' +
+          '<span class="item-label">更少见的做法</span>' +
+          '<strong>' + escapeHtml(item.unusualApproach || "-") + '</strong>' +
+        '</div>' +
+      '</div>' +
       '<div class="opp-bottom">' +
+        '<div class="opp-bottom-item"><span class="item-label">适合的人群</span>' + escapeHtml(item.targetAudience || "-") + '</div>' +
         '<div class="opp-bottom-item"><span class="item-label">建议形式</span>' + escapeHtml(item.bestFormat || "图文") + '</div>' +
-        '<div class="opp-bottom-item"><span class="item-label">风险提示</span>' + escapeHtml(item.risk || "-") + '</div>' +
       '</div>';
     box.appendChild(div);
   });
+}
+
+function getPlanTone(index) {
+  if (index < 2) return "tone-hypothesis";
+  if (index < 4) return "tone-feedback";
+  if (index < 6) return "tone-iterate";
+  return "tone-consolidate";
 }
 
 function renderPlan(list) {
@@ -137,34 +238,73 @@ function renderPlan(list) {
 
   list.forEach((item, index) => {
     const div = document.createElement("article");
-    div.className = "plan-item";
+    div.className = "plan-item " + getPlanTone(index);
     div.innerHTML =
-      '<div class="plan-index">Day ' + (index + 1) + '</div>' +
+      '<div class="plan-head">' +
+        '<div class="plan-index">Day ' + (index + 1) + '</div>' +
+        '<div class="plan-phase">' + escapeHtml(item.phase || "迭代") + '</div>' +
+      '</div>' +
       '<h3>' + escapeHtml(item.titleIdea || "待定标题") + '</h3>' +
       '<p><span class="item-label">内容角度</span>' + escapeHtml(item.angle || "-") + '</p>' +
-      '<p><span class="item-label">推荐形式</span>' + escapeHtml(item.format || "-") + '</p>';
+      '<p><span class="item-label">推荐形式</span>' + escapeHtml(item.format || "-") + '</p>' +
+      '<p><span class="item-label">观察重点</span>' + escapeHtml(item.feedbackFocus || "-") + '</p>' +
+      '<p class="plan-learning"><span class="item-label">基于前一天的学习</span>' + escapeHtml(item.learningFromPrev || "-") + '</p>';
     box.appendChild(div);
   });
 }
 
-function renderRisks(list) {
+function renderRisks(data) {
   const box = document.getElementById("riskAlerts");
   if (!box) return;
   box.innerHTML = "";
 
-  if (!list.length) {
-    const li = document.createElement("li");
-    li.className = "muted";
-    li.textContent = "当前无明显风险提醒。";
-    box.appendChild(li);
+  if (Array.isArray(data)) {
+    if (!data.length) {
+      box.innerHTML = '<p class="empty-note">当前无明显风险提醒。</p>';
+      return;
+    }
+
+    const paragraph = document.createElement("p");
+    paragraph.className = "risk-summary";
+    paragraph.textContent = data.join("。") + "。";
+    box.appendChild(paragraph);
     return;
   }
 
-  list.forEach(item => {
-    const li = document.createElement("li");
-    li.textContent = item;
-    box.appendChild(li);
-  });
+  if (!data || typeof data !== "object") {
+    box.innerHTML = '<p class="empty-note">当前无明显风险提醒。</p>';
+    return;
+  }
+
+  if (data.summary) {
+    const summary = document.createElement("p");
+    summary.className = "risk-summary";
+    summary.textContent = data.summary;
+    box.appendChild(summary);
+  }
+
+  if (Array.isArray(data.details) && data.details.length) {
+    const detailsWrap = document.createElement("div");
+    detailsWrap.className = "risk-details";
+
+    data.details.forEach((item) => {
+      const detail = document.createElement("article");
+      detail.className = "risk-item";
+      detail.innerHTML =
+        '<p><strong>容易遇到：</strong>' + escapeHtml(item.risk || "-") + '</p>' +
+        '<p><strong>更稳的做法：</strong>' + escapeHtml(item.mitigation || "-") + '</p>';
+      detailsWrap.appendChild(detail);
+    });
+
+    box.appendChild(detailsWrap);
+  }
+
+  if (data.encouragement) {
+    const encouragement = document.createElement("div");
+    encouragement.className = "risk-encouragement";
+    encouragement.textContent = data.encouragement;
+    box.appendChild(encouragement);
+  }
 }
 
 generateBtn.addEventListener("click", async () => {
@@ -208,7 +348,7 @@ generateBtn.addEventListener("click", async () => {
     renderOpportunities(data.opportunities || []);
     renderBlueprint(data.firstPostBlueprint || {});
     renderPlan(data.firstWeekPlan || []);
-    renderRisks(data.riskAlerts || []);
+    renderRisks(data.riskAlerts || {});
 
     resultEl.classList.remove("hidden");
     statusEl.textContent = "生成完成。";
