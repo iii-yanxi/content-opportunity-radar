@@ -28,6 +28,50 @@ function renderTags(tags) {
   });
 }
 
+function renderGridList(boxId, dataMap) {
+  const box = document.getElementById(boxId);
+  box.innerHTML = "";
+  if (!dataMap || typeof dataMap !== "object") return;
+
+  for (const [label, content] of Object.entries(dataMap)) {
+    if (!content) continue;
+    const div = document.createElement("div");
+    div.className = "grid-item";
+    div.innerHTML =
+      '<strong>' + escapeHtml(label) + '</strong>' +
+      '<p>' + escapeHtml(content) + '</p>';
+    box.appendChild(div);
+  }
+}
+
+function renderBlueprint(data) {
+  const box = document.getElementById("firstPostBlueprint");
+  box.innerHTML = "";
+  if (!data || !data.title) {
+    box.innerHTML = '<p class="empty-note">暂无第一篇内容建议。</p>';
+    return;
+  }
+
+  const structureHtml = (data.structure || []).map((s, i) => 
+    '<li><span class="step-num">' + (i + 1) + '</span> ' + escapeHtml(s) + '</li>'
+  ).join('');
+
+  box.innerHTML =
+    '<div class="bp-title-wrap">' +
+      '<span class="bp-badge">爆款模板</span>' +
+      '<h3 class="bp-title">' + escapeHtml(data.title) + '</h3>' +
+    '</div>' +
+    '<div class="bp-details">' +
+      '<div class="bp-row"><strong>黄金开头：</strong>' + escapeHtml(data.hook) + '</div>' +
+      '<div class="bp-row"><strong>推荐形式：</strong>' + escapeHtml(data.format) + '</div>' +
+      '<div class="bp-row"><strong>互动引导：</strong>' + escapeHtml(data.cta) + '</div>' +
+    '</div>' +
+    '<div class="bp-structure">' +
+      '<h4>正文结构参考：</h4>' +
+      '<ul>' + structureHtml + '</ul>' +
+    '</div>';
+}
+
 function renderOpportunities(list) {
   const box = document.getElementById("opportunities");
   box.innerHTML = "";
@@ -45,9 +89,12 @@ function renderOpportunities(list) {
       '<span class="rank">方向 ' + escapeHtml(item.position || "-") + '</span>' +
       '<h3>' + escapeHtml(item.name || "未命名方向") + '</h3>' +
       '</div>' +
-      '<p><span class="item-label">为什么适合</span>' + escapeHtml(item.reason || "-") + '</p>' +
-      '<p><span class="item-label">适合吸引</span>' + escapeHtml(item.targetAudience || "-") + '</p>' +
-      '<p><span class="item-label">风险点</span>' + escapeHtml(item.risk || "-") + '</p>';
+      '<p><span class="item-label">为什么适合过往经历</span>' + escapeHtml(item.reason || "-") + '</p>' +
+      '<p><span class="item-label">核心钩子与吸引点</span>' + escapeHtml(item.contentHook || "-") + '</p>' +
+      '<div class="opp-bottom">' +
+        '<div class="opp-bottom-item"><span class="item-label">适合人群</span>' + escapeHtml(item.targetAudience || "-") + '</div>' +
+        '<div class="opp-bottom-item"><span class="item-label">风险提示</span>' + escapeHtml(item.risk || "-") + '</div>' +
+      '</div>';
     box.appendChild(div);
   });
 }
@@ -107,7 +154,7 @@ generateBtn.addEventListener("click", async () => {
     return;
   }
 
-  statusEl.textContent = "正在生成，请稍等...";
+  statusEl.textContent = "正在深度分析，预计需要15-20秒，请稍等...";
   statusEl.dataset.state = "loading";
   generateBtn.disabled = true;
 
@@ -126,7 +173,21 @@ generateBtn.addEventListener("click", async () => {
 
     document.getElementById("assetSummary").textContent = data.assetSummary;
     renderTags(data.assetTags || []);
+    
+    renderGridList("differentiation", {
+      "核心价值切口": data.differentiation?.coreAngle,
+      "为什么只能你来做": data.differentiation?.whyYou,
+      "坚决避开的同质化路线": data.differentiation?.avoidCommonPath
+    });
+
+    renderGridList("trafficPotential", {
+      "情感类传播潜力": data.trafficPotential?.highResonance,
+      "干货类收藏潜力": data.trafficPotential?.highSaveValue,
+      "观点类讨论爆点": data.trafficPotential?.highDiscussionPotential
+    });
+
     renderOpportunities(data.opportunities || []);
+    renderBlueprint(data.firstPostBlueprint || {});
     renderPlan(data.firstWeekPlan || []);
     renderRisks(data.riskAlerts || []);
 
