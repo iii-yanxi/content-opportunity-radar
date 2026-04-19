@@ -5,23 +5,13 @@ const generationProgressEl = document.getElementById("generationProgress");
 const progressTrackEl = document.querySelector(".progress-track");
 const progressFillEl = document.getElementById("progressFill");
 const progressLabelEl = document.getElementById("progressLabel");
-const progressEtaEl = document.getElementById("progressEta");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const voiceControllers = new Map();
-let progressElapsedTimer = null;
 let progressStartedAt = 0;
 let progressPercent = 0;
 
-function formatElapsed(ms) {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  if (totalSeconds < 60) return `已等待 ${totalSeconds} 秒`;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `已等待 ${minutes} 分 ${seconds} 秒`;
-}
-
-function updateProgress(percent, label, etaText) {
-  if (!generationProgressEl || !progressFillEl || !progressLabelEl || !progressEtaEl) return;
+function updateProgress(percent, label) {
+  if (!generationProgressEl || !progressFillEl || !progressLabelEl) return;
 
   const safePercent = Math.max(0, Math.min(100, percent));
   progressPercent = safePercent;
@@ -30,7 +20,6 @@ function updateProgress(percent, label, etaText) {
     progressTrackEl.setAttribute("aria-valuenow", String(Math.round(safePercent)));
   }
   progressLabelEl.textContent = label;
-  progressEtaEl.textContent = etaText;
 }
 
 function setIndeterminateProgress(enabled) {
@@ -49,45 +38,28 @@ function setIndeterminateProgress(enabled) {
 
 function markGenerationStage(percent, label, indeterminate = false) {
   const safePercent = Math.max(progressPercent, Math.min(99, percent));
-  const elapsedText = formatElapsed(Date.now() - progressStartedAt);
   setIndeterminateProgress(indeterminate);
-  updateProgress(safePercent, label, `${elapsedText}（时长取决于模型负载）`);
+  updateProgress(safePercent, label);
 }
 
 function startGenerationProgress() {
   if (!generationProgressEl) return;
 
-  if (progressElapsedTimer) {
-    clearInterval(progressElapsedTimer);
-    progressElapsedTimer = null;
-  }
-
   generationProgressEl.classList.remove("hidden");
   progressStartedAt = Date.now();
   progressPercent = 0;
   markGenerationStage(8, "已提交请求，等待服务端生成...", true);
-
-  progressElapsedTimer = setInterval(() => {
-    if (!progressEtaEl) return;
-    progressEtaEl.textContent = `${formatElapsed(Date.now() - progressStartedAt)}（时长取决于模型负载）`;
-  }, 250);
 }
 
 function finishGenerationProgress(success) {
   if (!generationProgressEl) return;
 
-  if (progressElapsedTimer) {
-    clearInterval(progressElapsedTimer);
-    progressElapsedTimer = null;
-  }
-
   setIndeterminateProgress(false);
-  const totalElapsed = formatElapsed(Date.now() - progressStartedAt);
 
   if (success) {
-    updateProgress(100, "报告生成完成", `${totalElapsed}（已完成）`);
+    updateProgress(100, "报告生成完成");
   } else {
-    updateProgress(Math.max(progressPercent, 8), "生成中断，请重试", `${totalElapsed}（请求失败）`);
+    updateProgress(Math.max(progressPercent, 8), "生成中断，请重试");
   }
   progressPercent = 0;
 

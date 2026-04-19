@@ -391,18 +391,10 @@ export async function onRequestPost(context) {
 }
 `;
 
-    let response;
-    try {
-      response = await env.AI.run("@cf/meta/llama-3.1-70b-instruct", {
-        prompt,
-        max_tokens: 2200,
-      });
-    } catch (error) {
-      response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-        prompt,
-        max_tokens: 2200,
-      });
-    }
+    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+      prompt,
+      max_tokens: 1600,
+    });
 
     let text = "";
     if (typeof response === "string") {
