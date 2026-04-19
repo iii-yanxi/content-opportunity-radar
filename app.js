@@ -1,8 +1,148 @@
 const generateBtn = document.getElementById("generateBtn");
 const statusEl = document.getElementById("status");
 const resultEl = document.getElementById("result");
+const generationProgressEl = document.getElementById("generationProgress");
+const progressTrackEl = document.querySelector(".progress-track");
+const progressFillEl = document.getElementById("progressFill");
+const progressLabelEl = document.getElementById("progressLabel");
+const progressEtaEl = document.getElementById("progressEta");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const voiceControllers = new Map();
+const ESTIMATED_GENERATION_MS = 22000;
+let progressTimer = null;
+let progressStartedAt = 0;
+let progressFloorPercent = 0;
+let progressFloorLabel = "";
+
+const generationStages = [
+  {
+    label: "正在校验输入信息...",
+    start: 4,
+    end: 18,
+    duration: 1800,
+  },
+  {
+    label: "正在连接模型服务...",
+    start: 18,
+    end: 34,
+    duration: 3200,
+  },
+  {
+    label: "模型正在生成核心策略...",
+    start: 34,
+    end: 80,
+    duration: 12000,
+  },
+  {
+    label: "正在解析返回结果...",
+    start: 80,
+    end: 92,
+    duration: 3200,
+  },
+  {
+    label: "正在排版报告模块...",
+    start: 92,
+    end: 98,
+    duration: 1800,
+  },
+];
+
+function formatEta(ms) {
+  const seconds = Math.max(1, Math.ceil(ms / 1000));
+  return `预计剩余 ${seconds} 秒`;
+}
+
+function updateProgress(percent, label, etaText) {
+  if (!generationProgressEl || !progressFillEl || !progressLabelEl || !progressEtaEl) return;
+
+  const safePercent = Math.max(0, Math.min(100, percent));
+  progressFillEl.style.width = `${safePercent.toFixed(1)}%`;
+  if (progressTrackEl) {
+    progressTrackEl.setAttribute("aria-valuenow", String(Math.round(safePercent)));
+  }
+  progressLabelEl.textContent = label;
+  progressEtaEl.textContent = etaText;
+}
+
+function markGenerationStage(percent, label) {
+  const safePercent = Math.max(0, Math.min(99, percent));
+  progressFloorPercent = Math.max(progressFloorPercent, safePercent);
+  progressFloorLabel = label || progressFloorLabel;
+
+  const elapsed = Date.now() - progressStartedAt;
+  const etaText = elapsed <= ESTIMATED_GENERATION_MS
+    ? formatEta(ESTIMATED_GENERATION_MS - elapsed)
+    : "预计剩余几秒";
+
+  updateProgress(progressFloorPercent, progressFloorLabel || "正在生成报告内容...", etaText);
+}
+
+function startGenerationProgress() {
+  if (!generationProgressEl) return;
+
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+
+  generationProgressEl.classList.remove("hidden");
+  progressStartedAt = Date.now();
+  progressFloorPercent = 4;
+  progressFloorLabel = "正在校验输入信息...";
+  updateProgress(4, "正在分析你的输入信息...", formatEta(ESTIMATED_GENERATION_MS));
+
+  progressTimer = setInterval(() => {
+    const elapsed = Date.now() - progressStartedAt;
+
+    let consumed = 0;
+    let stagePercent = 98;
+    let stageLabel = "报告马上就好，正在做最后整理...";
+
+    for (const stage of generationStages) {
+      const stageStart = consumed;
+      const stageEnd = consumed + stage.duration;
+      if (elapsed <= stageEnd) {
+        const ratio = Math.max(0, Math.min(1, (elapsed - stageStart) / stage.duration));
+        stagePercent = stage.start + ratio * (stage.end - stage.start);
+        stageLabel = stage.label;
+        break;
+      }
+      consumed = stageEnd;
+    }
+
+    const percent = Math.max(stagePercent, progressFloorPercent);
+    const label = percent === progressFloorPercent && progressFloorLabel ? progressFloorLabel : stageLabel;
+    const etaText = elapsed <= ESTIMATED_GENERATION_MS
+      ? formatEta(ESTIMATED_GENERATION_MS - elapsed)
+      : "预计剩余几秒";
+
+    updateProgress(percent, label, etaText);
+  }, 250);
+}
+
+function finishGenerationProgress(success) {
+  if (!generationProgressEl) return;
+
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+
+  if (success) {
+    updateProgress(100, "报告生成完成", "已完成");
+  } else {
+    updateProgress(0, "生成中断，请重试", "--");
+  }
+
+  progressFloorPercent = 0;
+  progressFloorLabel = "";
+
+  window.setTimeout(() => {
+    if (!generationProgressEl || !progressFillEl) return;
+    generationProgressEl.classList.add("hidden");
+    progressFillEl.style.width = "0%";
+  }, success ? 900 : 1200);
+}
 
 function escapeHtml(str) {
   return String(str)
@@ -412,15 +552,21 @@ generateBtn.addEventListener("click", async () => {
   statusEl.textContent = "正在生成内容策略报告，请稍等...";
   statusEl.dataset.state = "loading";
   generateBtn.disabled = true;
+  startGenerationProgress();
 
   try {
+    markGenerationStage(20, "已完成输入校验，正在连接模型...");
+
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
+    markGenerationStage(76, "模型已返回结果，正在解析...");
+
     const data = await res.json();
+    markGenerationStage(86, "结果解析完成，正在整理模块...");
 
     if (!res.ok) {
       throw new Error(data.error || "生成失败");
@@ -436,12 +582,16 @@ generateBtn.addEventListener("click", async () => {
     renderBlueprint(data.firstPostBlueprint || {});
     renderPlan(data.firstWeekPlan || []);
 
+    markGenerationStage(96, "内容已就绪，正在完成最后排版...");
+
     resultEl.classList.remove("hidden");
+    finishGenerationProgress(true);
     statusEl.textContent = "生成完成。";
     statusEl.dataset.state = "success";
     resultEl.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
     console.error(err);
+    finishGenerationProgress(false);
     statusEl.textContent = "出错了：" + err.message;
     statusEl.dataset.state = "error";
   } finally {
