@@ -216,6 +216,10 @@ export async function onRequestPost(context) {
 5. 前一周该怎么从 0 到 1 开始，怎么发、怎么观察、怎么迭代
 6. 风险提醒要温和，不要吓人，要顺手给出缓解办法和鼓励
 
+你输出的内容要更像真正懂内容的人在说话：具体、带场景、带判断、带一点轻巧的记忆点。不要像通用模板，不要像公文，不要像没有经历的人在套句子。
+尤其是标题、钩子、创意角度、风险提醒和第一周计划，要写得更有画面感和一点点“人话里的聪明劲”。
+每一个方向都要给出明显不同的创意，不要三条都像同一套话术换个词。
+
 请根据用户输入，输出严格 JSON，不要输出 markdown，不要输出代码块。
 字段必须完整，不能省略，值尽量具体、可执行、像真正能发出去的内容策略。
 语言风格要求：可以更聪明、有判断、有一点幽默感，但不要油腻，不要浮夸，不要为了有趣而脱离用户输入。
@@ -365,30 +369,38 @@ export async function onRequestPost(context) {
     }
   ],
   "riskAlerts": {
-    "summary": "一段委婉、自然的提醒，写出冷启动里最容易卡住的地方，但语气要像在陪你往前走。",
+    "summary": "一段委婉、自然、带画面的提醒，写出冷启动里最容易卡住的地方，但语气要像在陪你往前走，不要像提醒清单。",
     "details": [
       {
-        "risk": "具体风险提醒1",
-        "mitigation": "对应的缓解办法"
+        "risk": "具体风险提醒1，要写得像真实创作者会遇到的一个小卡点",
+        "mitigation": "对应的缓解办法，要具体到动作，不要空泛"
       },
       {
-        "risk": "具体风险提醒2",
-        "mitigation": "对应的缓解办法"
+        "risk": "具体风险提醒2，要写得像真实创作者会遇到的一个小卡点",
+        "mitigation": "对应的缓解办法，要具体到动作，不要空泛"
       },
       {
-        "risk": "具体风险提醒3",
-        "mitigation": "对应的缓解办法"
+        "risk": "具体风险提醒3，要写得像真实创作者会遇到的一个小卡点",
+        "mitigation": "对应的缓解办法，要具体到动作，不要空泛"
       }
     ],
-    "encouragement": "先发第一条，比想一百条更重要。"
+    "encouragement": "先发第一条，比想一百条更重要，发出去之后，才有机会被世界回应。"
   }
 }
 `;
 
-    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-      prompt,
-      max_tokens: 1700,
-    });
+    let response;
+    try {
+      response = await env.AI.run("@cf/meta/llama-3.1-70b-instruct", {
+        prompt,
+        max_tokens: 2200,
+      });
+    } catch (error) {
+      response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+        prompt,
+        max_tokens: 2200,
+      });
+    }
 
     let text = "";
     if (typeof response === "string") {

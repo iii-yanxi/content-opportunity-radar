@@ -1,6 +1,8 @@
 const generateBtn = document.getElementById("generateBtn");
 const statusEl = document.getElementById("status");
 const resultEl = document.getElementById("result");
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const voiceControllers = new Map();
 
 function escapeHtml(str) {
   return String(str)
@@ -26,6 +28,111 @@ function renderTags(tags) {
     span.className = "tag";
     span.textContent = tag;
     box.appendChild(span);
+  });
+}
+
+function insertTextAtCursor(field, text) {
+  const value = field.value || "";
+  const start = field.selectionStart ?? value.length;
+  const end = field.selectionEnd ?? value.length;
+  const nextValue = value.slice(0, start) + text + value.slice(end);
+  field.value = nextValue;
+  const cursor = start + text.length;
+  field.setSelectionRange(cursor, cursor);
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function attachVoiceInputButtons() {
+  const buttons = document.querySelectorAll("[data-voice-for]");
+  buttons.forEach((button) => {
+    const fieldId = button.getAttribute("data-voice-for");
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+
+    if (!SpeechRecognition) {
+      button.disabled = true;
+      button.title = "当前浏览器不支持中文语音输入";
+      button.textContent = "不支持语音";
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "zh-CN";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    let finalText = "";
+
+    const stopVoice = (resetLabel = true) => {
+      voiceControllers.delete(fieldId);
+      button.classList.remove("is-recording");
+      if (resetLabel) {
+        button.textContent = "语音输入";
+      }
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        transcript += event.results[index][0].transcript;
+      }
+
+      if (event.results[event.results.length - 1]?.isFinal) {
+        finalText = transcript.trim();
+        return;
+      }
+
+      const liveText = transcript.trim();
+      button.dataset.liveText = liveText;
+      button.textContent = liveText ? `识别中：${liveText.slice(0, 8)}${liveText.length > 8 ? "…" : ""}` : "识别中...";
+    };
+
+    recognition.onend = () => {
+      const liveText = button.dataset.liveText || "";
+      const transcript = finalText || liveText;
+      if (transcript) {
+        const joined = field.value.trim();
+        const addition = joined ? (field.tagName === "TEXTAREA" ? "\n" : " ") + transcript : transcript;
+        insertTextAtCursor(field, addition);
+      }
+      delete button.dataset.liveText;
+      finalText = "";
+      stopVoice(true);
+    };
+
+    recognition.onerror = () => {
+      delete button.dataset.liveText;
+      finalText = "";
+      stopVoice(true);
+      statusEl.textContent = "语音输入暂时不可用，请再试一次。";
+      statusEl.dataset.state = "error";
+    };
+
+    button.addEventListener("click", () => {
+      if (voiceControllers.has(fieldId)) {
+        try {
+          voiceControllers.get(fieldId).stop();
+        } catch {
+          stopVoice(true);
+        }
+        return;
+      }
+
+      voiceControllers.set(fieldId, recognition);
+      button.classList.add("is-recording");
+      button.textContent = "请开始说...";
+      statusEl.textContent = "正在等待你的语音输入，尽量用自然中文表达。";
+      statusEl.dataset.state = "loading";
+
+      try {
+        recognition.start();
+      } catch (error) {
+        stopVoice(true);
+        statusEl.textContent = "语音输入启动失败，请稍后重试。";
+        statusEl.dataset.state = "error";
+        console.error(error);
+      }
+    });
   });
 }
 
@@ -236,21 +343,36 @@ function renderPlan(list) {
     return;
   }
 
+  const timeline = document.createElement("div");
+  timeline.className = "timeline";
+
   list.forEach((item, index) => {
     const div = document.createElement("article");
-    div.className = "plan-item " + getPlanTone(index);
+    div.className = "timeline-item " + getPlanTone(index);
     div.innerHTML =
-      '<div class="plan-head">' +
-        '<div class="plan-index">Day ' + (index + 1) + '</div>' +
-        '<div class="plan-phase">' + escapeHtml(item.phase || "迭代") + '</div>' +
-      '</div>' +
-      '<h3>' + escapeHtml(item.titleIdea || "待定标题") + '</h3>' +
-      '<p><span class="item-label">内容角度</span>' + escapeHtml(item.angle || "-") + '</p>' +
-      '<p><span class="item-label">推荐形式</span>' + escapeHtml(item.format || "-") + '</p>' +
-      '<p><span class="item-label">观察重点</span>' + escapeHtml(item.feedbackFocus || "-") + '</p>' +
-      '<p class="plan-learning"><span class="item-label">基于前一天的学习</span>' + escapeHtml(item.learningFromPrev || "-") + '</p>';
-    box.appendChild(div);
+      '<div class="timeline-dot"></div>' +
+      '<div class="timeline-card">' +
+        '<div class="plan-head">' +
+          '<div class="plan-index">Day ' + (index + 1) + '</div>' +
+          '<div class="plan-phase">' + escapeHtml(item.phase || "迭代") + '</div>' +
+        '</div>' +
+        '<h3>' + escapeHtml(item.titleIdea || "待定标题") + '</h3>' +
+        '<p>' + escapeHtml(item.angle || "-") + '</p>' +
+        '<div class="timeline-meta">' +
+          '<span>' + escapeHtml(item.format || "-") + '</span>' +
+          '<span>' + escapeHtml(item.feedbackFocus || "-") + '</span>' +
+          '<span>' + escapeHtml(item.learningFromPrev || "-") + '</span>' +
+        '</div>' +
+      '</div>';
+    timeline.appendChild(div);
   });
+
+  const footer = document.createElement("p");
+  footer.className = "timeline-note";
+  footer.textContent = "前 2 天先验证切口，3-4 天看反馈，5-7 天把有效写法收束成习惯。";
+
+  box.appendChild(timeline);
+  box.appendChild(footer);
 }
 
 function renderRisks(data) {
@@ -276,35 +398,37 @@ function renderRisks(data) {
     return;
   }
 
+  const sentences = [];
+
   if (data.summary) {
-    const summary = document.createElement("p");
-    summary.className = "risk-summary";
-    summary.textContent = data.summary;
-    box.appendChild(summary);
+    sentences.push(data.summary);
   }
 
   if (Array.isArray(data.details) && data.details.length) {
-    const detailsWrap = document.createElement("div");
-    detailsWrap.className = "risk-details";
+    const detailText = data.details
+      .map((item) => {
+        if (!item) return "";
+        const risk = item.risk ? `比如 ${item.risk}` : "";
+        const mitigation = item.mitigation ? `可以先用 ${item.mitigation}` : "";
+        if (risk && mitigation) return `${risk}，${mitigation}`;
+        return risk || mitigation;
+      })
+      .filter(Boolean)
+      .join("；");
 
-    data.details.forEach((item) => {
-      const detail = document.createElement("article");
-      detail.className = "risk-item";
-      detail.innerHTML =
-        '<p><strong>容易遇到：</strong>' + escapeHtml(item.risk || "-") + '</p>' +
-        '<p><strong>更稳的做法：</strong>' + escapeHtml(item.mitigation || "-") + '</p>';
-      detailsWrap.appendChild(detail);
-    });
-
-    box.appendChild(detailsWrap);
+    if (detailText) {
+      sentences.push(detailText);
+    }
   }
 
   if (data.encouragement) {
-    const encouragement = document.createElement("div");
-    encouragement.className = "risk-encouragement";
-    encouragement.textContent = data.encouragement;
-    box.appendChild(encouragement);
+    sentences.push(data.encouragement);
   }
+
+  const paragraph = document.createElement("p");
+  paragraph.className = "risk-summary risk-paragraph";
+  paragraph.textContent = sentences.filter(Boolean).join("。") + "。";
+  box.appendChild(paragraph);
 }
 
 generateBtn.addEventListener("click", async () => {
@@ -362,3 +486,5 @@ generateBtn.addEventListener("click", async () => {
     generateBtn.disabled = false;
   }
 });
+
+attachVoiceInputButtons();
