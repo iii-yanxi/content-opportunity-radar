@@ -248,8 +248,10 @@ export async function onRequestPost(context) {
 14. 所有内容都要具体，避免空泛鼓励和模板化描述。
 15. 标题和正文要尽量贴近用户输入，不要像通用模板。
 16. riskAlerts 要写成更人情化的结构：summary 是一段委婉提醒，details 是风险与缓解办法的配对，encouragement 是自然收尾的鼓励。
-17. 不要用吓人的口吻，也不要只讲问题，要把缓解办法写出来。
-18. 必须是合法 JSON。
+17. riskAlerts 的中文必须自然顺畅：不要出现奇怪空格、不要出现混乱标点、不要把句子硬拼接。
+18. riskAlerts 的语气像一个有经验的创作同伴在陪跑：先提醒，再给做法，最后鼓励。
+19. 不要用吓人的口吻，也不要只讲问题，要把缓解办法写出来。
+20. 必须是合法 JSON。
 
 请返回以下结构：
 {
@@ -369,7 +371,7 @@ export async function onRequestPost(context) {
     }
   ],
   "riskAlerts": {
-    "summary": "一段委婉、自然、带画面的提醒，写出冷启动里最容易卡住的地方，但语气要像在陪你往前走，不要像提醒清单。",
+    "summary": "一段委婉、自然、带画面的提醒，写出冷启动里最容易卡住的地方，语气要像在陪你往前走，不要像提醒清单。",
     "details": [
       {
         "risk": "具体风险提醒1，要写得像真实创作者会遇到的一个小卡点",
@@ -384,7 +386,7 @@ export async function onRequestPost(context) {
         "mitigation": "对应的缓解办法，要具体到动作，不要空泛"
       }
     ],
-    "encouragement": "先发第一条，比想一百条更重要，发出去之后，才有机会被世界回应。"
+    "encouragement": "一句自然的安慰和鼓励，不要口号感，要让人愿意继续做下去。"
   }
 }
 `;

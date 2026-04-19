@@ -52,7 +52,7 @@ function attachVoiceInputButtons() {
     if (!SpeechRecognition) {
       button.disabled = true;
       button.title = "当前浏览器不支持中文语音输入";
-      button.textContent = "不支持语音";
+      button.classList.add("is-disabled");
       return;
     }
 
@@ -66,9 +66,7 @@ function attachVoiceInputButtons() {
     const stopVoice = (resetLabel = true) => {
       voiceControllers.delete(fieldId);
       button.classList.remove("is-recording");
-      if (resetLabel) {
-        button.textContent = "语音输入";
-      }
+      if (resetLabel) button.title = "语音输入";
     };
 
     recognition.onresult = (event) => {
@@ -84,7 +82,7 @@ function attachVoiceInputButtons() {
 
       const liveText = transcript.trim();
       button.dataset.liveText = liveText;
-      button.textContent = liveText ? `识别中：${liveText.slice(0, 8)}${liveText.length > 8 ? "…" : ""}` : "识别中...";
+      button.title = liveText || "正在识别";
     };
 
     recognition.onend = () => {
@@ -120,7 +118,7 @@ function attachVoiceInputButtons() {
 
       voiceControllers.set(fieldId, recognition);
       button.classList.add("is-recording");
-      button.textContent = "请开始说...";
+      button.title = "正在录音，点一下可停止";
       statusEl.textContent = "正在等待你的语音输入，尽量用自然中文表达。";
       statusEl.dataset.state = "loading";
 
@@ -343,33 +341,33 @@ function renderPlan(list) {
     return;
   }
 
-  const timeline = document.createElement("div");
-  timeline.className = "timeline";
+  const keyIndexes = [0, 2, 4, 6].filter((index) => index < list.length);
+  const keyNodes = keyIndexes.map((index) => ({ item: list[index], day: index + 1 }));
 
-  list.forEach((item, index) => {
+  const timeline = document.createElement("div");
+  timeline.className = "timeline-horizontal";
+
+  keyNodes.forEach(({ item, day }, index) => {
     const div = document.createElement("article");
-    div.className = "timeline-item " + getPlanTone(index);
+    div.className = "timeline-h-item " + getPlanTone(index);
     div.innerHTML =
-      '<div class="timeline-dot"></div>' +
-      '<div class="timeline-card">' +
-        '<div class="plan-head">' +
-          '<div class="plan-index">Day ' + (index + 1) + '</div>' +
-          '<div class="plan-phase">' + escapeHtml(item.phase || "迭代") + '</div>' +
-        '</div>' +
-        '<h3>' + escapeHtml(item.titleIdea || "待定标题") + '</h3>' +
-        '<p>' + escapeHtml(item.angle || "-") + '</p>' +
-        '<div class="timeline-meta">' +
-          '<span>' + escapeHtml(item.format || "-") + '</span>' +
-          '<span>' + escapeHtml(item.feedbackFocus || "-") + '</span>' +
-          '<span>' + escapeHtml(item.learningFromPrev || "-") + '</span>' +
-        '</div>' +
+      '<div class="timeline-h-dot"></div>' +
+      '<div class="timeline-h-card">' +
+        '<div class="plan-index">Day ' + day + '</div>' +
+        '<h3>' + escapeHtml(item.phase || "关键节点") + '</h3>' +
+        '<p>' + escapeHtml(item.feedbackFocus || item.angle || "-") + '</p>' +
       '</div>';
+
+    if (index < keyNodes.length - 1) {
+      div.innerHTML += '<div class="timeline-h-link" aria-hidden="true"></div>';
+    }
+
     timeline.appendChild(div);
   });
 
   const footer = document.createElement("p");
   footer.className = "timeline-note";
-  footer.textContent = "前 2 天先验证切口，3-4 天看反馈，5-7 天把有效写法收束成习惯。";
+  footer.textContent = "关键节奏：先验证切口，再看反馈，然后放大有效表达，最后沉淀成可持续节奏。";
 
   box.appendChild(timeline);
   box.appendChild(footer);
@@ -380,6 +378,50 @@ function renderRisks(data) {
   if (!box) return;
   box.innerHTML = "";
 
+  const normalizeChineseText = (text) => {
+    return String(text || "")
+      .replace(/[\u00A0\t\n\r]+/g, " ")
+      .replace(/\s*([，。；：！？])/g, "$1")
+      .replace(/([（《“])\s+/g, "$1")
+      .replace(/\s+([）》”])/g, "$1")
+      .replace(/([\u4e00-\u9fff])\s+([\u4e00-\u9fff])/g, "$1$2")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const ensureEndPunctuation = (text) => {
+    if (!text) return "";
+    return /[。！？]$/.test(text) ? text : `${text}。`;
+  };
+
+  const toGentleSentence = (risk, mitigation) => {
+    const riskText = normalizeChineseText(risk);
+    const solutionText = normalizeChineseText(mitigation);
+    if (riskText && solutionText) {
+      return `如果你发现自己${riskText}，可以先${solutionText}`;
+    }
+    return riskText || solutionText;
+  };
+
+  const composeRiskParagraph = (source) => {
+    const summary = normalizeChineseText(source?.summary || "");
+    const details = Array.isArray(source?.details) ? source.details : [];
+    const encouragement = normalizeChineseText(source?.encouragement || "");
+
+    const guidance = details
+      .map((item) => toGentleSentence(item?.risk, item?.mitigation))
+      .filter(Boolean);
+
+    const chunks = [];
+    if (summary) chunks.push(summary);
+    if (guidance.length) {
+      chunks.push(`你可以这样处理：${guidance.join("；")}`);
+    }
+    if (encouragement) chunks.push(encouragement);
+
+    return ensureEndPunctuation(chunks.join("。"));
+  };
+
   if (Array.isArray(data)) {
     if (!data.length) {
       box.innerHTML = '<p class="empty-note">当前无明显风险提醒。</p>';
@@ -387,8 +429,8 @@ function renderRisks(data) {
     }
 
     const paragraph = document.createElement("p");
-    paragraph.className = "risk-summary";
-    paragraph.textContent = data.join("。") + "。";
+    paragraph.className = "risk-summary risk-paragraph";
+    paragraph.textContent = ensureEndPunctuation(normalizeChineseText(data.join("。")));
     box.appendChild(paragraph);
     return;
   }
@@ -398,36 +440,9 @@ function renderRisks(data) {
     return;
   }
 
-  const sentences = [];
-
-  if (data.summary) {
-    sentences.push(data.summary);
-  }
-
-  if (Array.isArray(data.details) && data.details.length) {
-    const detailText = data.details
-      .map((item) => {
-        if (!item) return "";
-        const risk = item.risk ? `比如 ${item.risk}` : "";
-        const mitigation = item.mitigation ? `可以先用 ${item.mitigation}` : "";
-        if (risk && mitigation) return `${risk}，${mitigation}`;
-        return risk || mitigation;
-      })
-      .filter(Boolean)
-      .join("；");
-
-    if (detailText) {
-      sentences.push(detailText);
-    }
-  }
-
-  if (data.encouragement) {
-    sentences.push(data.encouragement);
-  }
-
   const paragraph = document.createElement("p");
   paragraph.className = "risk-summary risk-paragraph";
-  paragraph.textContent = sentences.filter(Boolean).join("。") + "。";
+  paragraph.textContent = composeRiskParagraph(data);
   box.appendChild(paragraph);
 }
 
